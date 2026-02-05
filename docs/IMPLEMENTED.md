@@ -1,0 +1,50 @@
+# Implemented Features
+
+Last updated: 2026-02-05
+
+## Core Gameplay
+- 24x24 grid arena with two ships, facing, and HP.
+- 4-phase planning per turn (move + action per phase).
+- 30-second planning timer with execute-early button.
+- Deterministic phase-by-phase execution playback.
+- Port/starboard shooting with per-ship range, cannonball damage, and selectable shot count.
+- Grapple action (range 1) with instant win.
+- Win/draw detection and restart flow.
+- Ship type defaults defined in data (Sloop, Cutter, War Brig, Dhow, War Frigate, Baghlah).
+- Default matchup: P1 Cutter vs P2 War Brig.
+- AI opponent mode enabled via lobby (1 player).
+
+## Simulation & Rules
+- Deterministic engine with movement, combat, and win checks.
+- Simultaneous combat resolution with draw case.
+- Movement collision handling (edge bump, clash, swap block).
+- Turn-left/right uses L-shaped arc: forward 1 then side 1, ending with new facing.
+- Turn collisions while turning cancel translation but keep rotation.
+- Turning requires the forward tile (current facing) to be clear; otherwise rotate in place.
+- Turn collisions are checked at both steps; ships cannot pass through each other.
+- Ship stats applied per type (HP, cannon range, grapple range, cannonball size, shots per attack).
+- Hazard hook (no-op placeholder).
+
+## UI/UX
+- Canvas grid renderer with ship facing + HP.
+- Planner panel with clickable phase selector (cycle movement and port/starboard actions).
+- Multi-shot ships show two action buttons per side to choose 1 or 2 shots.
+- HUD for turn, phase, timer, and state.
+- Phase event log playback.
+- Lobby screen for player count + ship type selection (1 player vs AI / 2 player hotseat).
+- Back to Lobby control in match UI.
+- Ship headers show shots per attack, cannonball size, and range.
+
+## Platform/Scaffold
+- HTML/CSS/JS module structure wired up.
+- Local hotseat support (both plans in the planner).
+
+---
+
+# Planned Next
+- Hazard type (wind current).
+- Replay log export/import.
+- AI heuristic upgrade (candidate plan scoring).
+- Optional module cleanup (types, input, util helpers).
+- 3D ships + animated combat effects (Three.js layer).
+- Multiplayer lobbies (create/join/host) + turn sync.

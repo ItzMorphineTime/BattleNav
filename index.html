@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Battle Navigation PoC</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <section id="lobby-screen" class="lobby-screen">
+      <div class="lobby-card">
+        <h1>Battle Navigation</h1>
+        <p class="lobby-subtitle">Set up your match before setting sail.</p>
+        <form id="lobby-form" class="lobby-form">
+          <div class="lobby-field">
+            <label for="lobby-players">Players</label>
+            <select id="lobby-players">
+              <option value="1">1 Player (vs AI)</option>
+              <option value="2">2 Players (Hotseat)</option>
+            </select>
+          </div>
+
+          <div class="lobby-grid">
+            <div class="lobby-field">
+              <label for="lobby-p1-type">Captain Tide Ship</label>
+              <select id="lobby-p1-type"></select>
+            </div>
+            <div class="lobby-field">
+              <label for="lobby-p2-type">Captain Ember Ship</label>
+              <select id="lobby-p2-type"></select>
+            </div>
+          </div>
+
+          <div class="lobby-note" id="lobby-note">
+            P2 will be controlled by AI in 1 Player mode.
+          </div>
+
+          <button id="lobby-start-btn" class="btn btn-primary lobby-start" type="submit">
+            Start Match
+          </button>
+        </form>
+      </div>
+    </section>
+
+    <div class="app-shell hidden" id="game-root">
+      <header class="top-bar">
+        <h1>Battle Navigation PoC</h1>
+        <div class="hud">
+          <div class="hud-item">Turn: <strong id="hud-turn">1</strong></div>
+          <div class="hud-item">Phase: <strong id="hud-phase">-</strong></div>
+          <div class="hud-item">Timer: <strong id="hud-timer">30</strong>s</div>
+          <div class="hud-item">State: <strong id="hud-state">planning</strong></div>
+        </div>
+      </header>
+
+      <main class="main-layout">
+        <section class="arena-card">
+          <canvas id="arena-canvas" width="768" height="768"></canvas>
+          <div id="result-banner" class="result-banner hidden"></div>
+        </section>
+
+        <section class="planner-card">
+          <div id="planner-root"></div>
+          <div class="planner-controls">
+            <button id="execute-early-btn" class="btn btn-primary">Execute Early</button>
+            <button id="clear-plans-btn" class="btn">Clear Plans</button>
+            <button id="restart-btn" class="btn">Restart Match</button>
+            <button id="lobby-btn" class="btn">Back to Lobby</button>
+          </div>
+        </section>
+      </main>
+
+      <section class="log-card">
+        <h2>Phase Log</h2>
+        <ul id="event-log"></ul>
+      </section>
+    </div>
+
+    <script type="module" src="./src/main.js"></script>
+  </body>
+ </html>
