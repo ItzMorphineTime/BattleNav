@@ -146,6 +146,7 @@ Current hazard rules:
   - Facing S: Port=E, Starboard=W
   - Facing W: Port=S, Starboard=N
 - Shooting traces a straight ray up to the ship's cannon range.
+- Shots stop at the first hit (enemy ship or large rock).
 - First enemy ship tile hit takes damage based on cannonball size.
 
 ### 5.3.1 Cannonball Damage (Ship Stat)

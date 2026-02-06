@@ -1,50 +1,88 @@
-# Battle Navigation (PoC)
+# ⚓ Battle Navigation - Tactical Naval Duel
 
-Fast, turn-based ship tactics inspired by Puzzle Pirates "Sea Battle / Battle Navigation".
-Two captains plan 4 micro-actions under a 30-second timer, then watch the turn resolve phase-by-phase.
+<p align="center">
+  <img src="screenshots/Screenshot_01.png" alt="Battle Navigation Arena" width="640">
+</p>
 
-## Status
-Proof-of-concept in progress. Core loop is playable with local hotseat or AI.
+[![Play Now](https://img.shields.io/badge/Play-Now-brightgreen?style=for-the-badge)](https://itzmorphinetime.github.io/BattleNav/)
+[![JavaScript](https://img.shields.io/badge/JavaScript-ES6+-yellow.svg?style=flat-square&logo=javascript)](https://www.javascript.com/)
+![Dependencies](https://img.shields.io/badge/Dependencies-None-success.svg?style=flat-square)
 
-## Features (Current)
-- 24x24 grid arena with facing + HP per ship
-- 4-phase planning per turn (move + port/starboard actions each phase)
-- 30-second planning timer + execute-early
-- Deterministic phase playback with event log
-- Animated playback (movement interpolation + projectile shots + impact splashes)
-- Port/starboard shooting with per-ship cannonball size + multi-shot rules
-- Lobby screen to select player count, ship types, and map mode
-- AI opponent mode for 1-player games (simple deterministic plan generation)
-- Curved turn movement (rotate then advance)
-- Multi-shot ships can choose 1 or 2 shots per phase
-- Hazards: wind currents, 2x2 whirlpools with CW/CCW spin (opposite-corner move + 90-degree rotate),
-  and rocks (large blocks shots, small does not)
-- Map options: curated default arena or procedurally generated hazards/rocks
+Fast, mind-game-heavy naval tactics inspired by Puzzle Pirates "Sea Battle / Battle Navigation".
+Plan four micro-actions under a 30 second timer, then watch the turn resolve phase-by-phase.
 
-## How to Play
-1) In the lobby, choose player count, ship types, and map mode, then start the match.
-2) Use the planner on the right to queue 4 phases.
-3) Each phase includes:
-   - Movement: None | Forward | Turn Left | Turn Right
-   - Actions (per side): None | Shoot | Grapple
-4) Hit "Execute Early" or let the 30-second timer expire.
-5) Watch the 4 phases resolve.
+**[🕹️ Play the Game Here](https://itzmorphinetime.github.io/BattleNav/)**
 
-## Running Locally
-Because the project uses ES modules, it should be served from a local web server.
+---
 
-### Option A: Python (most systems)
-```bash
-python -m http.server 5173
-```
-Then open `http://localhost:5173` in your browser.
+## 🖼️ Screenshots
 
-### Option B: Any static server
-Use any static file server pointed at the repo root, then open the local URL.
+<p align="center">
+  <img src="screenshots/Screenshot_02.png" alt="Hazards and Combat" width="640">
+</p>
+
+---
+
+## ✨ Features
+
+### 🧠 Simultaneous Planning
+- 4-phase planning per turn with a 30 second timer
+- Port and starboard actions can be selected independently
+- Deterministic resolution with clear phase-by-phase playback
+
+### 🔥 Combat & Hazards
+- Port/starboard cannons with cannonball sizes and multi-shot rules
+- Grapple action for instant win at close range
+- Hazards: wind currents, 2x2 whirlpools, large/small rocks
+- Shots stop at first impact with explosions and water splashes
+
+### 🌊 Presentation
+- Curved turn arcs and collision bump feedback
+- Projectile shots with impact VFX
+- Phase log with readable outcomes
+
+### 🧭 Modes & Maps
+- Local hotseat or AI opponent
+- Curated default arena or procedural map generation
+- Ship roster with distinct stats
+
+---
+
+## 🚀 Getting Started
+
+### Play Online
+Visit **[itzmorphinetime.github.io/BattleNav](https://itzmorphinetime.github.io/BattleNav/)** to play instantly in your browser.
+
+### Run Locally
+
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/ItzMorphineTime/BattleNav.git
+   cd BNav
+   ```
+
+2. **Serve locally**
+   ```bash
+   python -m http.server 5173
+   ```
+   Then open `http://localhost:5173` in your browser.
 
 > Note: Opening `index.html` via `file://` may be blocked by some browsers due to module import rules.
 
-## Ship Types (Current Defaults)
+---
+
+## 🎮 How to Play
+
+1. Choose player count, ship types, and map mode in the lobby.
+2. Queue four phases using the planner on the right.
+3. Each phase includes:
+   - Movement: None | Forward | Turn Left | Turn Right
+   - Actions (per side): None | Shoot | Grapple
+4. Hit "Execute Early" or let the timer expire.
+
+---
+
+## 🚢 Ship Types (Current Defaults)
 - **Sloop:** HP 10, range 2, small shot, 1 cannon
 - **Cutter:** HP 16, range 3, small shot, 2 cannons
 - **War Brig:** HP 20, range 3, medium shot, 2 cannons
@@ -54,10 +92,24 @@ Use any static file server pointed at the repo root, then open the local URL.
 
 Current matchup: **P1 Cutter** vs **P2 War Brig**.
 
-## Repository Structure
+---
+
+## 🛠️ Technology Stack
+
+- **Pure JavaScript (ES6+)** - No frameworks or libraries
+- **HTML5 Canvas** - Fast 2D rendering
+- **Deterministic Simulation** - Same inputs, same outputs
+
+---
+
+## 📁 Project Structure
+
 ```
 index.html
 styles.css
+screenshots/
+  Screenshot_01.png
+  Screenshot_02.png
 src/
   main.js
   game/
@@ -80,16 +132,55 @@ docs/
   IMPLEMENTED.md
 ```
 
-## Docs
-- `docs/IMPLEMENTATION_PLAN.md` - high-level plan and milestones
-- `docs/IMPLEMENTED.md` - implemented features ledger
+---
 
-## Roadmap (High Level)
-- Replay export/import
-- Map seed input + map editor tools
-- 3D ships + animated combat effects (Three.js)
-- Multiplayer lobbies (create/join/host) + turn sync
+## 🎯 Roadmap
+
+- [ ] Replay export/import
+- [ ] Map seed input + map editor tools
+- [ ] 3D ships + animated combat effects (Three.js)
+- [ ] Multiplayer lobbies (create/join/host) + turn sync
 
 ---
 
-If you're contributing, keep `docs/IMPLEMENTATION_PLAN.md` and `docs/IMPLEMENTED.md` up to date as features land.
+## 🤝 Contributing
+
+Contributions are welcome:
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m "Add some AmazingFeature"`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
+
+### Development Guidelines
+- Keep gameplay deterministic
+- Preserve readability in phase playback
+- Update `docs/IMPLEMENTATION_PLAN.md` and `docs/IMPLEMENTED.md` when features land
+
+---
+
+## 📝 License
+
+This project is licensed under the Apache License - see the [LICENSE](LICENSE) file for details.
+
+---
+
+## 🙏 Acknowledgments
+
+- Inspired by **Puzzle Pirates: Sea Battle / Battle Navigation**
+- Built with a love of mind games, boardgame tactics, and tight iteration
+
+---
+
+## 🌟 Show Your Support
+
+If you enjoyed this project, please consider:
+- ⭐ Starring the repository
+- 🐛 Reporting bugs
+- 💡 Suggesting features
+- 🔀 Contributing code
+
+---
+
+**[⚓ Set Sail Now](https://itzmorphinetime.github.io/BattleNav/)**

@@ -21,6 +21,7 @@ Last updated: 2026-02-06
 ## Simulation & Rules
 - Deterministic engine with movement, combat, and win checks.
 - Simultaneous combat resolution with draw case.
+- Shots stop at first impact (ship or large rock) with impact-aware traces for VFX.
 - Movement collision handling (edge bump, clash, swap block).
 - Turn-left/right uses L-shaped arc: forward 1 then side 1, ending with new facing.
 - Turn collisions while turning cancel translation but keep rotation.
@@ -34,6 +35,7 @@ Last updated: 2026-02-06
 - Planner panel with clickable phase selector (cycle movement and port/starboard actions).
 - Multi-shot ships show two horizontal action buttons per side; each side cycles independently
   (1 shot -> 2 shots -> grapple -> none).
+- Port-side action buttons are ordered by distance from the ship (2, 1, move, 1, 2).
 - HUD for turn, phase, timer, and state.
 - Phase event log playback.
 - Animated phase playback with arc turns, collision bumps, hazard displacement, projectile shots, obstacle explosions, and miss splashes.
