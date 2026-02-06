@@ -8,6 +8,7 @@ import {
   SIDE,
 } from "./constants.js";
 
+/** Direction lookup for grid movement. */
 const DIRECTION_VECTORS = {
   N: { x: 0, y: -1 },
   E: { x: 1, y: 0 },
@@ -32,6 +33,7 @@ const STARBOARD_DIRECTION = {
 const TURN_LEFT = { N: "W", W: "S", S: "E", E: "N" };
 const TURN_RIGHT = { N: "E", E: "S", S: "W", W: "N" };
 
+/** Resolve port/starboard into an absolute facing. */
 function sideDirection(facing, side) {
   return side === SIDE.PORT ? PORT_DIRECTION[facing] : STARBOARD_DIRECTION[facing];
 }
@@ -68,6 +70,7 @@ function chooseTurn(current, desired) {
   return MOVE.TURN_RIGHT;
 }
 
+/** Simple forward-only collision check for AI previews. */
 function canMoveForward(ship, grid, enemy) {
   const vec = DIRECTION_VECTORS[ship.facing];
   const nx = ship.x + vec.x;
@@ -81,6 +84,7 @@ function canMoveForward(ship, grid, enemy) {
   return true;
 }
 
+/** Apply a lightweight move preview for AI planning. */
 function applyMovePreview(ship, move, grid, enemy) {
   const next = { ...ship };
   if (move === MOVE.FORWARD && canMoveForward(ship, grid, enemy)) {
@@ -95,6 +99,7 @@ function applyMovePreview(ship, move, grid, enemy) {
   return next;
 }
 
+/** Greedy action choice (grapple > shoot > none) based on current alignment. */
 function chooseAction(attacker, target) {
   const cannonRange = attacker.cannonRange ?? SHOOT_RANGE;
   const grappleRange = attacker.grappleRange ?? GRAPPLE_RANGE;
@@ -116,6 +121,7 @@ function chooseAction(attacker, target) {
   return ACTION.NONE;
 }
 
+/** Turn toward the opponent, otherwise move forward when clear. */
 function chooseMove(attacker, target, grid) {
   const desired = desiredFacingToward(attacker, target);
   if (attacker.facing === desired) {
@@ -124,6 +130,12 @@ function chooseMove(attacker, target, grid) {
   return chooseTurn(attacker.facing, desired);
 }
 
+/**
+ * Generate a deterministic 4-phase plan for the AI ship.
+ * @param {import("./state.js").MatchState} matchState
+ * @param {string} aiShipId
+ * @returns {Array<{move:string, action:string, shots?:number}>}
+ */
 export function generateAiPlan(matchState, aiShipId) {
   const plan = [];
   const aiShip = matchState.ships.find((ship) => ship.id === aiShipId);

@@ -25,6 +25,7 @@ const ACTION_LABELS = {
   [ACTION_KIND.GRAPPLE]: "Grapple",
 };
 
+/** Advance to the next value in a cyclic list. */
 function nextCycleValue(list, current) {
   const index = list.indexOf(current);
   if (index === -1) {
@@ -33,6 +34,12 @@ function nextCycleValue(list, current) {
   return list[(index + 1) % list.length];
 }
 
+/**
+ * Create a circular action button for port/starboard actions.
+ * @param {string} side
+ * @param {number} slotIndex
+ * @param {number} slotCount
+ */
 function createActionButton(side, slotIndex, slotCount) {
   const button = document.createElement("button");
   button.type = "button";
@@ -56,6 +63,7 @@ function createActionButton(side, slotIndex, slotCount) {
   return button;
 }
 
+/** Create the central movement tile. */
 function createMoveButton() {
   const button = document.createElement("button");
   button.type = "button";
@@ -65,6 +73,7 @@ function createMoveButton() {
   return button;
 }
 
+/** Update action button UI state. */
 function updateActionButton(button, sideLabel, action) {
   button.dataset.action = action;
   const label = button.querySelector(".action-text");
@@ -77,11 +86,17 @@ function updateActionButton(button, sideLabel, action) {
   button.title = `${sideLabel}${slot}: ${labelText}`;
 }
 
+/** Update move button UI state. */
 function updateMoveButton(button, move) {
   button.dataset.move = move;
   button.title = `Move: ${MOVE_LABELS[move] || MOVE_LABELS[MOVE.NONE]}`;
 }
 
+/**
+ * Build a planner UI for each ship and return plan accessors.
+ * @param {HTMLElement} rootElement
+ * @param {Array<import("../game/state.js").ShipState>} ships
+ */
 export function createPlanner(rootElement, ships) {
   const rowsByShipId = {};
   rootElement.innerHTML = "";
@@ -159,6 +174,7 @@ export function createPlanner(rootElement, ships) {
       );
       updateMoveButton(moveButton, rowState.move);
 
+      // Keep a single action per phase: grapple overrides fire, and one side only.
       const updateSideButtons = (side) => {
         const actions = side === SIDE.PORT ? rowState.portActions : rowState.starActions;
         const buttons = side === SIDE.PORT ? rowState.portButtons : rowState.starButtons;
@@ -171,6 +187,7 @@ export function createPlanner(rootElement, ships) {
         actions.fill(ACTION_KIND.NONE);
       };
 
+      // Cycle actions for the selected side/slot.
       const handleActionClick = (side, index) => {
         const actions = side === SIDE.PORT ? rowState.portActions : rowState.starActions;
         const otherActions = side === SIDE.PORT ? rowState.starActions : rowState.portActions;
@@ -222,6 +239,7 @@ export function createPlanner(rootElement, ships) {
 
   rootElement.appendChild(wrapper);
 
+  /** Convert a row UI state into a phase plan entry. */
   function rowToPlan(row) {
     const { move, portActions, starActions } = row.rowState;
     let action = ACTION.NONE;
@@ -245,6 +263,7 @@ export function createPlanner(rootElement, ships) {
     return shots ? { move, action, shots } : { move, action };
   }
 
+  /** Read the full plan for each ship. */
   function getPlans() {
     const plansByShipId = {};
     for (const [shipId, rows] of Object.entries(rowsByShipId)) {
@@ -253,6 +272,7 @@ export function createPlanner(rootElement, ships) {
     return plansByShipId;
   }
 
+  /** Reset all UI buttons to default (empty) plans. */
   function clearPlans() {
     const defaults = createEmptyPlan();
     for (const rows of Object.values(rowsByShipId)) {
@@ -272,6 +292,7 @@ export function createPlanner(rootElement, ships) {
     }
   }
 
+  /** Disable all planner buttons. */
   function setDisabled(disabled) {
     for (const rows of Object.values(rowsByShipId)) {
       for (const row of rows) {
@@ -286,6 +307,7 @@ export function createPlanner(rootElement, ships) {
     }
   }
 
+  /** Disable a specific ship's planner buttons (used for AI). */
   function setShipDisabled(shipId, disabled) {
     const rows = rowsByShipId[shipId];
     if (!rows) {
@@ -302,6 +324,7 @@ export function createPlanner(rootElement, ships) {
     }
   }
 
+  /** Pre-fill planner UI with an existing plan. */
   function setPlans(shipId, plan) {
     const rows = rowsByShipId[shipId];
     if (!rows || !plan) {

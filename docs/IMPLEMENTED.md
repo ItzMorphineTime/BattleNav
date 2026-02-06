@@ -43,6 +43,7 @@ Last updated: 2026-02-06
 - HTML/CSS/JS module structure wired up.
 - Local hotseat support (both plans in the planner).
 - Procedural map generator with spawn safety buffer for hazards/rocks.
+- Procedural map config centralized in constants and JSDoc comments across core modules.
 
 ---
 

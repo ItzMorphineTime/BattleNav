@@ -10,6 +10,7 @@ import {
   SIDE,
 } from "./constants.js";
 
+/** Grid movement vectors by facing. */
 const DIRECTION_VECTORS = {
   N: { x: 0, y: -1 },
   E: { x: 1, y: 0 },
@@ -31,6 +32,7 @@ const STARBOARD_DIRECTION = {
   W: "N",
 };
 
+/** Resolve port/starboard into an absolute facing. */
 function sideDirection(facing, side) {
   return side === SIDE.PORT ? PORT_DIRECTION[facing] : STARBOARD_DIRECTION[facing];
 }
@@ -50,6 +52,7 @@ function sideFromAction(action) {
   return SIDE.STARBOARD;
 }
 
+/** Trace a straight line of tiles out to range. */
 function traceLine(startShip, direction, range) {
   const vec = DIRECTION_VECTORS[direction];
   const tiles = [];
@@ -74,6 +77,7 @@ function findLargeRockAt(x, y, grid) {
   return grid.rocks.find((rock) => rock.x === x && rock.y === y && rock.size === ROCK_SIZE.LARGE);
 }
 
+/** Limit line of sight when large rocks block cannon fire. */
 function applyLineOfSight(line, grid) {
   for (let i = 0; i < line.length; i += 1) {
     const tile = line[i];
@@ -87,6 +91,12 @@ function applyLineOfSight(line, grid) {
   return { line, blocked: false };
 }
 
+/**
+ * Resolve combat intent for the current phase.
+ * @param {import("./state.js").ShipState[]} ships
+ * @param {Record<string, {action:string, shots?:number}>} phasePlansByShipId
+ * @param {import("./state.js").MapGrid} grid
+ */
 export function resolveCombatPhase(ships, phasePlansByShipId, grid) {
   const byId = Object.fromEntries(ships.map((ship) => [ship.id, ship]));
   const damageByShipId = Object.fromEntries(ships.map((ship) => [ship.id, 0]));
@@ -94,6 +104,7 @@ export function resolveCombatPhase(ships, phasePlansByShipId, grid) {
   const events = [];
   const traces = [];
 
+  // Evaluate each ship's action against the other ship (simultaneous resolution).
   for (const attacker of ships) {
     const defender = ships.find((ship) => ship.id !== attacker.id);
     const phasePlan = phasePlansByShipId[attacker.id] || { action: ACTION.NONE };

@@ -1,3 +1,8 @@
+/**
+ * Apply damage/grapple outcomes and determine win/draw state.
+ * @param {import("./state.js").ShipState[]} ships
+ * @param {{damageByShipId: Record<string, number>, grappleByShipId: Record<string, boolean>}} combatResult
+ */
 export function applyCombatResults(ships, combatResult) {
   const nextShips = ships.map((ship) => ({ ...ship }));
   const shipById = Object.fromEntries(nextShips.map((ship) => [ship.id, ship]));

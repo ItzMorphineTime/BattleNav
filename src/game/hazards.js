@@ -1,5 +1,6 @@
 import { HAZARD_TYPE, WHIRLPOOL_SPIN } from "./constants.js";
 
+/** Direction lookup for grid movement. */
 const DIRECTION_VECTORS = {
   N: { x: 0, y: -1 },
   E: { x: 1, y: 0 },
@@ -10,6 +11,7 @@ const DIRECTION_VECTORS = {
 const TURN_RIGHT = { N: "E", E: "S", S: "W", W: "N" };
 const TURN_LEFT = { N: "W", W: "S", S: "E", E: "N" };
 
+/** @param {number} x @param {number} y */
 function isInsideGrid(x, y, grid) {
   return x >= 0 && y >= 0 && x < grid.width && y < grid.height;
 }
@@ -32,10 +34,12 @@ function isStaticBlocked(x, y, grid) {
   );
 }
 
+/** @returns {import("./state.js").ShipState|null} */
 function findShipAt(x, y, ships, excludeId) {
   return ships.find((ship) => ship.id !== excludeId && ship.x === x && ship.y === y) || null;
 }
 
+/** Apply a single wind push if the target tile is clear. */
 function applyWind(ship, hazard, grid, ships) {
   const vec = DIRECTION_VECTORS[hazard.dir];
   if (!vec) {
@@ -72,6 +76,7 @@ function whirlpoolDestination(x, y, whirlpool) {
   };
 }
 
+/** Whirlpool spin uses grid-facing rotation, not world rotation. */
 function rotateByWhirlpoolFacing(currentFacing, whirlpool) {
   const spin = whirlpool.spin || WHIRLPOOL_SPIN.CW;
   if (spin === WHIRLPOOL_SPIN.CCW) {
@@ -80,6 +85,12 @@ function rotateByWhirlpoolFacing(currentFacing, whirlpool) {
   return TURN_RIGHT[currentFacing] || currentFacing;
 }
 
+/**
+ * Apply hazards in two passes: whirlpools first (multi-tile), then single-tile winds.
+ * @param {import("./state.js").ShipState[]} ships
+ * @param {import("./state.js").MapGrid} grid
+ * @returns {{ships: import("./state.js").ShipState[], events: string[]}}
+ */
 export function applyHazardsPhase(ships, grid) {
   const nextShips = ships.map((ship) => ({ ...ship }));
   const events = [];
@@ -95,6 +106,7 @@ export function applyHazardsPhase(ships, grid) {
   const shipsInWhirlpool = new Set();
   const whirlpoolMoves = [];
 
+  // Collect whirlpool moves so we can apply them without mid-loop interference.
   for (const ship of nextShips) {
     const whirlpool = whirlpools.find((hazard) => isWithinWhirlpool(ship.x, ship.y, hazard));
     if (!whirlpool) {
@@ -109,6 +121,7 @@ export function applyHazardsPhase(ships, grid) {
     });
   }
 
+  // Apply whirlpool rotation + displacement.
   for (const move of whirlpoolMoves) {
     const ship = nextShips.find((candidate) => candidate.id === move.shipId);
     if (!ship) {
@@ -133,6 +146,7 @@ export function applyHazardsPhase(ships, grid) {
     events.push(`${ship.name} is spun through the whirlpool.`);
   }
 
+  // Apply wind pushes for ships not caught in a whirlpool.
   for (const ship of nextShips) {
     if (shipsInWhirlpool.has(ship.id)) {
       continue;

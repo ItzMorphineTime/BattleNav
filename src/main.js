@@ -8,6 +8,7 @@ import { createPlanner } from "./ui/planner.js";
 import { Renderer2D } from "./ui/renderer2d.js";
 import { TurnTimer } from "./ui/timer.js";
 
+// DOM refs.
 const arenaCanvas = document.getElementById("arena-canvas");
 const plannerRoot = document.getElementById("planner-root");
 const executeEarlyBtn = document.getElementById("execute-early-btn");
@@ -32,6 +33,7 @@ const hudRefs = {
   stateEl: document.getElementById("hud-state"),
 };
 
+// Runtime state.
 let gameState = createInitialState();
 const renderer = new Renderer2D(arenaCanvas, gameState.grid);
 let planner = createPlanner(plannerRoot, gameState.ships);
@@ -44,6 +46,7 @@ let lobbySettings = {
   mapMode: MAP_MODE.DEFAULT,
 };
 
+// Countdown timer drives auto-execution when it hits zero.
 const timer = new TurnTimer(
   TURN_SECONDS,
   (remaining) => {
@@ -54,26 +57,31 @@ const timer = new TurnTimer(
   },
 );
 
+/** Append a message to the phase log (most recent at bottom). */
 function addLogEntry(message) {
   const li = document.createElement("li");
   li.textContent = message;
-  eventLog.prepend(li);
+  eventLog.append(li);
 }
 
+/** Clear the phase log. */
 function clearEventLog() {
   eventLog.innerHTML = "";
 }
 
+/** Show the end-of-match banner. */
 function showResult(text) {
   resultBanner.textContent = text;
   resultBanner.classList.remove("hidden");
 }
 
+/** Hide the end-of-match banner. */
 function hideResult() {
   resultBanner.classList.add("hidden");
   resultBanner.textContent = "";
 }
 
+/** Enter planning mode and restart the timer. */
 function setPlanningMode() {
   isExecuting = false;
   planner.setDisabled(false);
@@ -90,6 +98,7 @@ function setPlanningMode() {
   timer.start();
 }
 
+/** Handle end-of-match UI + timer cleanup. */
 function endMatch() {
   timer.stop();
   planner.setDisabled(true);
@@ -106,6 +115,7 @@ function endMatch() {
   }
 }
 
+/** Execute one full 4-phase turn and play back results. */
 async function executeTurn() {
   if (isExecuting || gameState.status === "finished") {
     return;
@@ -176,6 +186,7 @@ async function executeTurn() {
   }
 }
 
+/** Reset match state from lobby settings. */
 function restartMatch() {
   timer.stop();
   gameState = createInitialState({
@@ -191,6 +202,7 @@ function restartMatch() {
   setPlanningMode();
 }
 
+/** Populate the lobby ship type dropdowns. */
 function populateShipTypeSelect(selectElement) {
   selectElement.innerHTML = "";
   for (const type of Object.values(SHIP_TYPES)) {
@@ -201,6 +213,7 @@ function populateShipTypeSelect(selectElement) {
   }
 }
 
+/** Update the helper text based on player count. */
 function updateLobbyNote() {
   lobbyNote.textContent =
     lobbyPlayers.value === "1"
@@ -208,16 +221,19 @@ function updateLobbyNote() {
       : "Both captains are controlled locally (hotseat).";
 }
 
+/** Switch to lobby screen. */
 function showLobby() {
   lobbyScreen.classList.remove("hidden");
   gameRoot.classList.add("hidden");
 }
 
+/** Switch to game screen. */
 function hideLobby() {
   lobbyScreen.classList.add("hidden");
   gameRoot.classList.remove("hidden");
 }
 
+// UI event wiring.
 executeEarlyBtn.addEventListener("click", () => {
   void executeTurn();
 });

@@ -7,6 +7,15 @@ export const MAP_MODE = Object.freeze({
   PROCEDURAL: "procedural",
 });
 
+export const PROCEDURAL_CONFIG = Object.freeze({
+  windCount: 6,
+  whirlpoolCount: 2,
+  largeRockCount: 3,
+  smallRockCount: 5,
+  spawnBuffer: 2,
+  edgePadding: 1,
+});
+
 export const MOVE = Object.freeze({
   NONE: "none",
   FORWARD: "forward",

@@ -7,25 +7,66 @@ import {
   MAP_MODE,
   MOVE,
   PHASE_COUNT,
+  PROCEDURAL_CONFIG,
   ROCK_SIZE,
   SHIP_TYPES,
   WHIRLPOOL_SPIN,
 } from "./constants.js";
+
+/**
+ * @typedef {Object} PhasePlan
+ * @property {string} move
+ * @property {string} action
+ * @property {number=} shots
+ */
+
+/**
+ * @typedef {Object} MapGrid
+ * @property {number} width
+ * @property {number} height
+ * @property {string} mode
+ * @property {number=} seed
+ * @property {Array<Object>=} hazards
+ * @property {Array<Object>=} rocks
+ */
+
+/**
+ * @typedef {Object} ShipState
+ * @property {string} id
+ * @property {string} name
+ * @property {number} x
+ * @property {number} y
+ * @property {string} facing
+ * @property {string} typeId
+ * @property {string} typeLabel
+ * @property {number} hp
+ * @property {number} maxHp
+ * @property {number} cannonRange
+ * @property {string} cannonballSize
+ * @property {number} shotsPerAttack
+ * @property {number} grappleRange
+ * @property {number} speed
+ * @property {string} turnProfile
+ * @property {boolean} alive
+ */
+
+/**
+ * @typedef {Object} MatchState
+ * @property {number} turnNumber
+ * @property {number|null} phaseIndex
+ * @property {string} status
+ * @property {string|null} winnerId
+ * @property {boolean} draw
+ * @property {MapGrid} grid
+ * @property {ShipState[]} ships
+ */
 
 const DEFAULT_SPAWNS = [
   { id: "P1", x: 5, y: 12, facing: "E" },
   { id: "P2", x: 18, y: 12, facing: "W" },
 ];
 
-const PROCEDURAL_CONFIG = {
-  windCount: 6,
-  whirlpoolCount: 2,
-  largeRockCount: 3,
-  smallRockCount: 5,
-  spawnBuffer: 2,
-  edgePadding: 1,
-};
-
+/** @returns {PhasePlan[]} */
 export function createEmptyPlan() {
   return Array.from({ length: PHASE_COUNT }, () => ({
     move: MOVE.NONE,
@@ -33,6 +74,7 @@ export function createEmptyPlan() {
   }));
 }
 
+/** @returns {MapGrid} */
 function buildDefaultMap() {
   return {
     width: GRID_SIZE,
@@ -59,6 +101,7 @@ function buildDefaultMap() {
   };
 }
 
+/** @param {string|number|undefined} seed */
 function hashSeed(seed) {
   if (typeof seed === "number" && Number.isFinite(seed)) {
     return seed >>> 0;
@@ -72,6 +115,7 @@ function hashSeed(seed) {
   return hash >>> 0;
 }
 
+/** @param {string|number|undefined} seed */
 function createRng(seed) {
   let state = hashSeed(seed);
   if (state === 0) {
@@ -85,18 +129,22 @@ function createRng(seed) {
   };
 }
 
+/** @param {() => number} rng */
 function randomInt(rng, min, max) {
   return Math.floor(rng() * (max - min + 1)) + min;
 }
 
+/** @param {() => number} rng */
 function randomChoice(rng, list) {
   return list[randomInt(rng, 0, list.length - 1)];
 }
 
+/** @param {number} x @param {number} y */
 function tileKey(x, y) {
   return `${x},${y}`;
 }
 
+/** Reserve spawn-adjacent tiles so random hazards never block early turns. */
 function reserveSpawnTiles(spawnPoints, width, height, buffer) {
   const reserved = new Set();
   for (const spawn of spawnPoints) {
@@ -113,6 +161,11 @@ function reserveSpawnTiles(spawnPoints, width, height, buffer) {
   return reserved;
 }
 
+/**
+ * Build a randomized hazard/rock layout. Seed is optional but stored for replay.
+ * @param {{width:number,height:number,seed?:string|number,spawnPoints:Array<{x:number,y:number}>}} options
+ * @returns {MapGrid}
+ */
 function generateProceduralMap({ width, height, seed, spawnPoints }) {
   const actualSeed = seed ?? Math.floor(Math.random() * 2 ** 32);
   const rng = createRng(actualSeed);
@@ -127,9 +180,11 @@ function generateProceduralMap({ width, height, seed, spawnPoints }) {
   );
   const directions = FACINGS;
 
+  // Track occupied tiles so hazards do not overlap each other or spawns.
   const isFree = (x, y) => !reserved.has(tileKey(x, y)) && !occupied.has(tileKey(x, y));
   const markTile = (x, y) => occupied.add(tileKey(x, y));
 
+  // Place 2x2 whirlpools with a clear footprint.
   const placeWhirlpool = () => {
     const size = 2;
     const minX = PROCEDURAL_CONFIG.edgePadding;
@@ -165,6 +220,7 @@ function generateProceduralMap({ width, height, seed, spawnPoints }) {
     }
   };
 
+  // Place a single wind tile with a random direction.
   const placeWind = () => {
     for (let attempt = 0; attempt < 200; attempt += 1) {
       const x = randomInt(
@@ -186,6 +242,7 @@ function generateProceduralMap({ width, height, seed, spawnPoints }) {
     }
   };
 
+  // Place a single rock tile.
   const placeRock = (size) => {
     for (let attempt = 0; attempt < 200; attempt += 1) {
       const x = randomInt(rng, 0, width - 1);
@@ -199,6 +256,7 @@ function generateProceduralMap({ width, height, seed, spawnPoints }) {
     }
   };
 
+  // Generate in batches so the layout stays readable.
   for (let i = 0; i < PROCEDURAL_CONFIG.whirlpoolCount; i += 1) {
     placeWhirlpool();
   }
@@ -222,6 +280,11 @@ function generateProceduralMap({ width, height, seed, spawnPoints }) {
   };
 }
 
+/**
+ * Create a brand new match state.
+ * @param {{p1TypeId?:string,p2TypeId?:string,p1Name?:string,p2Name?:string,mapMode?:string,mapSeed?:string|number}} options
+ * @returns {MatchState}
+ */
 export function createInitialState(options = {}) {
   const buildShip = ({ id, name, x, y, facing, typeId }) => {
     const type = SHIP_TYPES[typeId] || SHIP_TYPES[DEFAULT_SHIP_TYPE];
@@ -289,6 +352,7 @@ export function createInitialState(options = {}) {
   };
 }
 
+/** @template T @param {T} value @returns {T} */
 export function cloneState(value) {
   return JSON.parse(JSON.stringify(value));
 }

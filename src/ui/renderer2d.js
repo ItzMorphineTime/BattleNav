@@ -1,10 +1,12 @@
 import { HAZARD_TYPE, ROCK_SIZE, WHIRLPOOL_SPIN } from "../game/constants.js";
 
+/** Default team colors for ships. */
 const SHIP_COLORS = {
   P1: "#32d5d7",
   P2: "#ffb84a",
 };
 
+/** Convert facing to a canvas rotation angle. */
 function facingAngle(facing) {
   switch (facing) {
     case "N":
@@ -20,7 +22,14 @@ function facingAngle(facing) {
   }
 }
 
+/**
+ * 2D canvas renderer for the arena and combat traces.
+ */
 export class Renderer2D {
+  /**
+   * @param {HTMLCanvasElement} canvas
+   * @param {{width:number,height:number}} grid
+   */
   constructor(canvas, grid) {
     this.canvas = canvas;
     this.ctx = canvas.getContext("2d");
@@ -30,6 +39,7 @@ export class Renderer2D {
     this.offsetY = Math.floor((canvas.height - this.cell * grid.height) / 2);
   }
 
+  /** @param {number} x @param {number} y */
   gridToPixel(x, y) {
     return {
       px: this.offsetX + x * this.cell,
@@ -37,6 +47,7 @@ export class Renderer2D {
     };
   }
 
+  /** Draw the grid background + lines. */
   drawGrid() {
     const { ctx, cell, grid, offsetX, offsetY } = this;
     ctx.fillStyle = "#082436";
@@ -60,6 +71,7 @@ export class Renderer2D {
     }
   }
 
+  /** Draw hazards (rocks, wind arrows, whirlpools). */
   drawHazards(grid) {
     const { ctx, cell } = this;
     if (!grid) {
@@ -178,6 +190,7 @@ export class Renderer2D {
     }
   }
 
+  /** Draw a single ship with facing arrow + HP label. */
   drawShip(ship) {
     const { ctx, cell } = this;
     const { px, py } = this.gridToPixel(ship.x, ship.y);
@@ -202,6 +215,7 @@ export class Renderer2D {
     ctx.fillText(`HP:${ship.hp}`, px + 2, py + cell - 4);
   }
 
+  /** Draw shot/grapple traces for the current phase. */
   drawTraces(traces) {
     const { ctx, cell } = this;
     if (!traces || traces.length === 0) {
@@ -247,6 +261,11 @@ export class Renderer2D {
     }
   }
 
+  /**
+   * Render the entire frame (grid, hazards, ships, traces).
+   * @param {import("../game/state.js").MatchState} matchState
+   * @param {{traces?: Array<Object>}} overlay
+   */
   draw(matchState, overlay = {}) {
     const { ctx, canvas } = this;
     ctx.clearRect(0, 0, canvas.width, canvas.height);

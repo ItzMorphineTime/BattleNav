@@ -1,5 +1,6 @@
 import { MOVE } from "./constants.js";
 
+/** Grid movement vectors by facing. */
 const DIRECTION_VECTORS = {
   N: { x: 0, y: -1 },
   E: { x: 1, y: 0 },
@@ -10,6 +11,7 @@ const DIRECTION_VECTORS = {
 const TURN_LEFT = { N: "W", W: "S", S: "E", E: "N" };
 const TURN_RIGHT = { N: "E", E: "S", S: "W", W: "N" };
 
+/** @param {number} x @param {number} y */
 function isInsideGrid(x, y, grid) {
   return x >= 0 && y >= 0 && x < grid.width && y < grid.height;
 }
@@ -44,11 +46,20 @@ function isTurnMove(move) {
   return move === MOVE.TURN_LEFT || move === MOVE.TURN_RIGHT;
 }
 
+/**
+ * Returns the tile directly in front of the ship (optionally overriding facing).
+ * @param {{x:number,y:number,facing:string}} ship
+ */
 function nextForwardPosition(ship, facingOverride) {
   const vec = DIRECTION_VECTORS[facingOverride || ship.facing];
   return { x: ship.x + vec.x, y: ship.y + vec.y };
 }
 
+/**
+ * Build a movement proposal for collision checks.
+ * - Forward: step1 only
+ * - Turn: step1 (forward), step2 (side) with updated facing
+ */
 function computeProposal(ship, move, grid) {
   const proposal = {
     move,
@@ -93,6 +104,7 @@ function computeProposal(ship, move, grid) {
       return proposal;
     }
 
+    // Step 2 uses the new facing to complete the L-shaped turn.
     const sideFacing = proposal.facingEnd;
     const sideVec = DIRECTION_VECTORS[sideFacing];
     const step2 = {
@@ -112,6 +124,13 @@ function computeProposal(ship, move, grid) {
   return proposal;
 }
 
+/**
+ * Resolve movement for both ships simultaneously with collision checks.
+ * @param {import("./state.js").ShipState[]} ships
+ * @param {Record<string, {move:string}>} phasePlansByShipId
+ * @param {import("./state.js").MapGrid} grid
+ * @returns {{ships: import("./state.js").ShipState[], events: string[]}}
+ */
 export function resolveMovementPhase(ships, phasePlansByShipId, grid) {
   const [a, b] = ships.map((ship) => ({ ...ship }));
   const aPlan = phasePlansByShipId[a.id] || { move: MOVE.NONE };
@@ -122,6 +141,7 @@ export function resolveMovementPhase(ships, phasePlansByShipId, grid) {
   const aProposal = computeProposal(a, aPlan.move, grid);
   const bProposal = computeProposal(b, bPlan.move, grid);
 
+  // Step 1: forward tiles (either forward move or turn bow step).
   let aStep1Allowed = Boolean(aProposal.step1) && !aProposal.step1BlockedStatic;
   let bStep1Allowed = Boolean(bProposal.step1) && !bProposal.step1BlockedStatic;
 
@@ -155,6 +175,7 @@ export function resolveMovementPhase(ships, phasePlansByShipId, grid) {
     }
   }
 
+  // Prevent moving into a stationary ship that could not advance.
   if (aStep1Allowed && sameTile(aProposal.step1, bProposal.start) && !bStep1Allowed) {
     aStep1Allowed = false;
     movementEvents.push(`${a.name} cannot move into ${b.name}.`);
@@ -167,6 +188,7 @@ export function resolveMovementPhase(ships, phasePlansByShipId, grid) {
   const aPos1 = aStep1Allowed ? aProposal.step1 : aProposal.start;
   const bPos1 = bStep1Allowed ? bProposal.step1 : bProposal.start;
 
+  // Step 2: side step to complete a turn (if applicable).
   let aStep2Allowed =
     isTurnMove(aPlan.move) &&
     aStep1Allowed &&
@@ -191,6 +213,7 @@ export function resolveMovementPhase(ships, phasePlansByShipId, grid) {
     movementEvents.push("Both ships collide during their turns and hold position.");
   }
 
+  // Block step2 if it would land on the other ship's step1 location.
   if (aStep2Allowed && sameTile(aProposal.step2, bPos1)) {
     aStep2Allowed = false;
     movementEvents.push(`${a.name} cannot complete the turn into ${b.name}.`);
@@ -200,6 +223,7 @@ export function resolveMovementPhase(ships, phasePlansByShipId, grid) {
     movementEvents.push(`${b.name} cannot complete the turn into ${a.name}.`);
   }
 
+  // Apply final positions and rotation.
   const aFinal = aStep2Allowed ? aProposal.step2 : aPos1;
   const bFinal = bStep2Allowed ? bProposal.step2 : bPos1;
 
