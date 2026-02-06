@@ -1,9 +1,10 @@
 # Implemented Features
 
-Last updated: 2026-02-05
+Last updated: 2026-02-06
 
 ## Core Gameplay
 - 24x24 grid arena with two ships, facing, and HP.
+- Curated default map layout with tuned hazards/rocks.
 - 4-phase planning per turn (move + action per phase).
 - 30-second planning timer with execute-early button.
 - Deterministic phase-by-phase execution playback.
@@ -13,6 +14,8 @@ Last updated: 2026-02-05
 - Ship type defaults defined in data (Sloop, Cutter, War Brig, Dhow, War Frigate, Baghlah).
 - Default matchup: P1 Cutter vs P2 War Brig.
 - AI opponent mode enabled via lobby (1 player).
+- Hazards: wind currents, 2x2 whirlpools with CW/CCW spin (opposite-corner move + 90-degree rotate),
+  and rocks (large blocks shots, small does not).
 
 ## Simulation & Rules
 - Deterministic engine with movement, combat, and win checks.
@@ -23,7 +26,7 @@ Last updated: 2026-02-05
 - Turning requires the forward tile (current facing) to be clear; otherwise rotate in place.
 - Turn collisions are checked at both steps; ships cannot pass through each other.
 - Ship stats applied per type (HP, cannon range, grapple range, cannonball size, shots per attack).
-- Hazard hook (no-op placeholder).
+- Hazards applied after movement with deterministic effects.
 
 ## UI/UX
 - Canvas grid renderer with ship facing + HP.
@@ -32,17 +35,18 @@ Last updated: 2026-02-05
 - HUD for turn, phase, timer, and state.
 - Phase event log playback.
 - Lobby screen for player count + ship type selection (1 player vs AI / 2 player hotseat).
+- Lobby map selection (default or procedural).
 - Back to Lobby control in match UI.
 - Ship headers show shots per attack, cannonball size, and range.
 
 ## Platform/Scaffold
 - HTML/CSS/JS module structure wired up.
 - Local hotseat support (both plans in the planner).
+- Procedural map generator with spawn safety buffer for hazards/rocks.
 
 ---
 
 # Planned Next
-- Hazard type (wind current).
 - Replay log export/import.
 - AI heuristic upgrade (candidate plan scoring).
 - Optional module cleanup (types, input, util helpers).

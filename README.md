@@ -12,13 +12,16 @@ Proof-of-concept in progress. Core loop is playable with local hotseat or AI.
 - 30-second planning timer + execute-early
 - Deterministic phase playback with event log
 - Port/starboard shooting with per-ship cannonball size + multi-shot rules
-- Lobby screen to select player count and ship types
+- Lobby screen to select player count, ship types, and map mode
 - AI opponent mode for 1-player games (simple deterministic plan generation)
 - Curved turn movement (rotate then advance)
 - Multi-shot ships can choose 1 or 2 shots per phase
+- Hazards: wind currents, 2x2 whirlpools with CW/CCW spin (opposite-corner move + 90-degree rotate),
+  and rocks (large blocks shots, small does not)
+- Map options: curated default arena or procedurally generated hazards/rocks
 
 ## How to Play
-1) In the lobby, choose player count and ship types, then start the match.
+1) In the lobby, choose player count, ship types, and map mode, then start the match.
 2) Use the planner on the right to queue 4 phases.
 3) Each phase includes:
    - Movement: None | Forward | Turn Left | Turn Right
@@ -81,8 +84,8 @@ docs/
 - `docs/IMPLEMENTED.md` - implemented features ledger
 
 ## Roadmap (High Level)
-- Hazards (wind currents, whirlpools, rocks)
 - Replay export/import
+- Map seed input + map editor tools
 - 3D ships + animated combat effects (Three.js)
 - Multiplayer lobbies (create/join/host) + turn sync
 

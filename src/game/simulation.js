@@ -37,7 +37,7 @@ export function resolveTurn(matchState, plansByShipId) {
 
     const movement = resolveMovementPhase(workingState.ships, phasePlansByShipId, workingState.grid);
     const hazards = applyHazardsPhase(movement.ships, workingState.grid, phaseIndex);
-    const combat = resolveCombatPhase(hazards.ships, phasePlansByShipId);
+    const combat = resolveCombatPhase(hazards.ships, phasePlansByShipId, workingState.grid);
     const win = applyCombatResults(hazards.ships, combat);
 
     workingState.ships = win.ships;

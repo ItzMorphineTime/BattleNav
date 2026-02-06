@@ -79,7 +79,7 @@ Define small, explicit state objects to keep simulation deterministic.
 - **MatchState**
   - `turnNumber`
   - `phaseIndex` (`0..3` during execution)
-  - `grid` (`width`, `height`, optional hazards)
+  - `grid` (`width`, `height`, `mode`, optional `seed`, hazards/rocks)
   - `ships` (2 ships)
   - `status` (`planning | executing | finished`)
   - `winnerId | draw`
@@ -99,11 +99,21 @@ Define small, explicit state objects to keep simulation deterministic.
 ## 5) Rules Specification (Deterministic)
 Create a single source-of-truth rules document in code comments/docs.
 
+### 5.0 Map Modes
+- **Default map:** curated hazards/rocks layout tuned for readable lanes.
+- **Procedural map:** random hazards/rocks with spawn safety buffers and optional seed for repeatability.
+
 ### 5.1 Turn Order Per Phase
 1. Resolve movement for both ships.
-2. Apply hazards (MVP: no-op).
+2. Apply hazards.
 3. Resolve combat actions.
 4. Check win conditions.
+
+Current hazard rules:
+- **Wind currents:** if a ship ends a phase on a wind tile, it is pushed 1 tile in the wind direction if clear.
+- **Whirlpools:** 2x2 hazard with a `spin` (CW/CCW). Ships on any of its tiles rotate 90 degrees
+  in the whirlpool's spin direction and move to the opposite corner of the 2x2.
+- **Rocks:** block movement. Large rocks block cannon fire; small rocks do not.
 
 ### 5.2 Movement Rules (MVP)
 - `forward`: move 1 tile in facing direction if valid.
@@ -182,6 +192,7 @@ Current wiring:
 - Top: timer + turn/phase indicators.
 - Bottom: event log (compact).
 - Pre-game lobby screen for player count + ship type selection.
+- Lobby includes map selection (default vs procedural).
 
 ### 6.2 Planning Panel
 - 4 rows (Phase 1-4), each with two dropdowns/buttons:
@@ -197,7 +208,7 @@ Current UI implementation:
 - Click left/right action buttons to cycle port/starboard action (none/fire/grapple).
 - Ships with 2 shots show two action buttons per side; selecting one = 1 shot, selecting both = 2 shots.
 - Selecting one side clears the other (only one action per phase).
-- Lobby screen with player count (1 vs AI / 2 hotseat) and ship type selection.
+- Lobby screen with player count (1 vs AI / 2 hotseat), ship type selection, and map mode (default/procedural).
 - Ship headers display cannonball size, shots per attack, and range.
 
 ### 6.3 Execution Playback
@@ -261,7 +272,7 @@ Status: Completed.
 - Improve readability animations + event log clarity.
 - Add basic AI opponent.
 - Add one hazard type (wind) if stable.
-Status: AI done, ship types done, hazards pending.
+Status: AI done, ship types done, hazards done, map modes done.
 
 ## 9) Testing Strategy
 

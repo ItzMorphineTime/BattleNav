@@ -4,6 +4,7 @@ import {
   DEFAULT_CANNONBALL_SIZE,
   DEFAULT_SHOTS_PER_ATTACK,
   GRAPPLE_RANGE,
+  ROCK_SIZE,
   SHOOT_DAMAGE,
   SHOOT_RANGE,
   SIDE,
@@ -66,7 +67,27 @@ function isOnTile(ship, tile) {
   return ship.x === tile.x && ship.y === tile.y;
 }
 
-export function resolveCombatPhase(ships, phasePlansByShipId) {
+function findLargeRockAt(x, y, grid) {
+  if (!grid || !Array.isArray(grid.rocks)) {
+    return null;
+  }
+  return grid.rocks.find((rock) => rock.x === x && rock.y === y && rock.size === ROCK_SIZE.LARGE);
+}
+
+function applyLineOfSight(line, grid) {
+  for (let i = 0; i < line.length; i += 1) {
+    const tile = line[i];
+    if (findLargeRockAt(tile.x, tile.y, grid)) {
+      return {
+        line: line.slice(0, i + 1),
+        blocked: true,
+      };
+    }
+  }
+  return { line, blocked: false };
+}
+
+export function resolveCombatPhase(ships, phasePlansByShipId, grid) {
   const byId = Object.fromEntries(ships.map((ship) => [ship.id, ship]));
   const damageByShipId = Object.fromEntries(ships.map((ship) => [ship.id, 0]));
   const grappleByShipId = Object.fromEntries(ships.map((ship) => [ship.id, false]));
@@ -90,7 +111,9 @@ export function resolveCombatPhase(ships, phasePlansByShipId) {
         ? Math.min(maxShots, Math.max(1, requestedShots))
         : maxShots;
       const totalDamage = damagePerShot * shotsUsed;
-      const line = traceLine(attacker, firingDirection, cannonRange);
+      const rawLine = traceLine(attacker, firingDirection, cannonRange);
+      const los = applyLineOfSight(rawLine, grid);
+      const line = los.line;
       traces.push({
         attackerId: attacker.id,
         kind: "shot",
@@ -104,6 +127,9 @@ export function resolveCombatPhase(ships, phasePlansByShipId) {
         damageByShipId[defender.id] += totalDamage;
         const shotSuffix = shotsUsed > 1 ? ` (${shotsUsed} shots)` : shotsUsed === 1 && maxShots > 1 ? " (1 shot)" : "";
         events.push(`${attacker.name} fires ${side}${shotSuffix} and hits ${defender.name}.`);
+      } else if (los.blocked) {
+        const shotSuffix = shotsUsed > 1 ? ` (${shotsUsed} shots)` : shotsUsed === 1 && maxShots > 1 ? " (1 shot)" : "";
+        events.push(`${attacker.name} fires ${side}${shotSuffix} into a large rock.`);
       } else {
         const shotSuffix = shotsUsed > 1 ? ` (${shotsUsed} shots)` : shotsUsed === 1 && maxShots > 1 ? " (1 shot)" : "";
         events.push(`${attacker.name} fires ${side}${shotSuffix} and misses.`);

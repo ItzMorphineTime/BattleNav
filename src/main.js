@@ -1,4 +1,4 @@
-import { DEFAULT_SHIP_TYPE, SHIP_TYPES, TURN_SECONDS } from "./game/constants.js";
+import { DEFAULT_SHIP_TYPE, MAP_MODE, SHIP_TYPES, TURN_SECONDS } from "./game/constants.js";
 import { generateAiPlan } from "./game/ai.js";
 import { resolveTurn } from "./game/simulation.js";
 import { createInitialState } from "./game/state.js";
@@ -22,6 +22,7 @@ const lobbyForm = document.getElementById("lobby-form");
 const lobbyPlayers = document.getElementById("lobby-players");
 const lobbyP1Type = document.getElementById("lobby-p1-type");
 const lobbyP2Type = document.getElementById("lobby-p2-type");
+const lobbyMap = document.getElementById("lobby-map");
 const lobbyNote = document.getElementById("lobby-note");
 
 const hudRefs = {
@@ -40,6 +41,7 @@ let lobbySettings = {
   playerCount: 1,
   p1TypeId: DEFAULT_SHIP_TYPE,
   p2TypeId: "war_brig",
+  mapMode: MAP_MODE.DEFAULT,
 };
 
 const timer = new TurnTimer(
@@ -179,6 +181,7 @@ function restartMatch() {
   gameState = createInitialState({
     p1TypeId: lobbySettings.p1TypeId,
     p2TypeId: lobbySettings.p2TypeId,
+    mapMode: lobbySettings.mapMode,
   });
   aiEnabled = lobbySettings.playerCount === 1;
   hideResult();
@@ -242,6 +245,7 @@ lobbyForm.addEventListener("submit", (event) => {
     playerCount: Number(lobbyPlayers.value),
     p1TypeId: lobbyP1Type.value,
     p2TypeId: lobbyP2Type.value,
+    mapMode: lobbyMap.value,
   };
   hideLobby();
   restartMatch();
@@ -251,5 +255,8 @@ populateShipTypeSelect(lobbyP1Type);
 populateShipTypeSelect(lobbyP2Type);
 lobbyP1Type.value = lobbySettings.p1TypeId;
 lobbyP2Type.value = lobbySettings.p2TypeId;
+if (lobbyMap) {
+  lobbyMap.value = lobbySettings.mapMode;
+}
 updateLobbyNote();
 showLobby();

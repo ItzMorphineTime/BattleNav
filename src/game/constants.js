@@ -2,6 +2,11 @@ export const GRID_SIZE = 24;
 export const PHASE_COUNT = 4;
 export const TURN_SECONDS = 30;
 
+export const MAP_MODE = Object.freeze({
+  DEFAULT: "default",
+  PROCEDURAL: "procedural",
+});
+
 export const MOVE = Object.freeze({
   NONE: "none",
   FORWARD: "forward",
@@ -31,6 +36,21 @@ export const SIDE = Object.freeze({
 export const CANNONBALL_SIZE = Object.freeze({
   SMALL: "small",
   MEDIUM: "medium",
+  LARGE: "large",
+});
+
+export const HAZARD_TYPE = Object.freeze({
+  WIND: "wind",
+  WHIRLPOOL: "whirlpool",
+});
+
+export const WHIRLPOOL_SPIN = Object.freeze({
+  CW: "cw",
+  CCW: "ccw",
+});
+
+export const ROCK_SIZE = Object.freeze({
+  SMALL: "small",
   LARGE: "large",
 });
 
