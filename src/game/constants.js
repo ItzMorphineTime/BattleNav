@@ -73,7 +73,6 @@ export const SHIP_TYPES = {
     shotsPerAttack: 1,
     grappleRange: 1,
     speed: 1,
-    turnProfile: "fast",
   },
   cutter: {
     id: "cutter",
@@ -84,7 +83,6 @@ export const SHIP_TYPES = {
     shotsPerAttack: 2,
     grappleRange: 1,
     speed: 1,
-    turnProfile: "balanced",
   },
   war_brig: {
     id: "war_brig",
@@ -95,7 +93,6 @@ export const SHIP_TYPES = {
     shotsPerAttack: 2,
     grappleRange: 1,
     speed: 1,
-    turnProfile: "slow",
   },
   dhow: {
     id: "dhow",
@@ -106,7 +103,6 @@ export const SHIP_TYPES = {
     shotsPerAttack: 1,
     grappleRange: 1,
     speed: 1,
-    turnProfile: "balanced",
   },
   war_frigate: {
     id: "war_frigate",
@@ -117,7 +113,6 @@ export const SHIP_TYPES = {
     shotsPerAttack: 2,
     grappleRange: 1,
     speed: 1,
-    turnProfile: "very_slow",
   },
   baghlah: {
     id: "baghlah",
@@ -128,7 +123,6 @@ export const SHIP_TYPES = {
     shotsPerAttack: 1,
     grappleRange: 1,
     speed: 1,
-    turnProfile: "slow",
   },
 };
 

@@ -10,7 +10,12 @@ import {
 import { createEmptyPlan } from "../game/state.js";
 
 const MOVE_CYCLE = [MOVE.TURN_LEFT, MOVE.FORWARD, MOVE.TURN_RIGHT, MOVE.NONE];
-const ACTION_CYCLE = [ACTION_KIND.NONE, ACTION_KIND.FIRE, ACTION_KIND.GRAPPLE];
+const ACTION_MODE = Object.freeze({
+  NONE: "none",
+  FIRE1: "fire_1",
+  FIRE2: "fire_2",
+  GRAPPLE: "grapple",
+});
 
 const MOVE_LABELS = {
   [MOVE.NONE]: "Hold Position",
@@ -90,6 +95,47 @@ function updateActionButton(button, sideLabel, action) {
 function updateMoveButton(button, move) {
   button.dataset.move = move;
   button.title = `Move: ${MOVE_LABELS[move] || MOVE_LABELS[MOVE.NONE]}`;
+}
+
+function getSideMode(actions, shotSlots) {
+  if (actions.includes(ACTION_KIND.GRAPPLE)) {
+    return ACTION_MODE.GRAPPLE;
+  }
+  const fireCount = actions.filter((value) => value === ACTION_KIND.FIRE).length;
+  if (fireCount <= 0) {
+    return ACTION_MODE.NONE;
+  }
+  if (shotSlots > 1 && fireCount > 1) {
+    return ACTION_MODE.FIRE2;
+  }
+  return ACTION_MODE.FIRE1;
+}
+
+function applySideMode(actions, mode, shotSlots) {
+  actions.fill(ACTION_KIND.NONE);
+  if (mode === ACTION_MODE.FIRE1) {
+    actions[0] = ACTION_KIND.FIRE;
+  } else if (mode === ACTION_MODE.FIRE2) {
+    actions[0] = ACTION_KIND.FIRE;
+    if (shotSlots > 1) {
+      actions[1] = ACTION_KIND.FIRE;
+    }
+  } else if (mode === ACTION_MODE.GRAPPLE) {
+    actions[0] = ACTION_KIND.GRAPPLE;
+  }
+}
+
+function nextSideMode(currentMode, shotSlots) {
+  if (currentMode === ACTION_MODE.NONE) {
+    return ACTION_MODE.FIRE1;
+  }
+  if (currentMode === ACTION_MODE.FIRE1) {
+    return shotSlots > 1 ? ACTION_MODE.FIRE2 : ACTION_MODE.GRAPPLE;
+  }
+  if (currentMode === ACTION_MODE.FIRE2) {
+    return ACTION_MODE.GRAPPLE;
+  }
+  return ACTION_MODE.NONE;
 }
 
 /**
@@ -187,38 +233,25 @@ export function createPlanner(rootElement, ships) {
         actions.fill(ACTION_KIND.NONE);
       };
 
-      // Cycle actions for the selected side/slot.
-      const handleActionClick = (side, index) => {
+      // Cycle actions for the selected side (1 shot -> 2 shots -> grapple -> none).
+      const handleActionClick = (side) => {
         const actions = side === SIDE.PORT ? rowState.portActions : rowState.starActions;
         const otherActions = side === SIDE.PORT ? rowState.starActions : rowState.portActions;
-        const next = nextCycleValue(ACTION_CYCLE, actions[index]);
-
-        if (next === ACTION_KIND.GRAPPLE) {
-          actions.fill(ACTION_KIND.NONE);
-          actions[index] = ACTION_KIND.GRAPPLE;
-          otherActions.fill(ACTION_KIND.NONE);
-        } else if (next === ACTION_KIND.FIRE) {
-          if (actions.includes(ACTION_KIND.GRAPPLE)) {
-            actions.fill(ACTION_KIND.NONE);
-          }
-          actions[index] = ACTION_KIND.FIRE;
-          if (otherActions.some((value) => value !== ACTION_KIND.NONE)) {
-            otherActions.fill(ACTION_KIND.NONE);
-          }
-        } else {
-          actions[index] = ACTION_KIND.NONE;
-        }
+        const currentMode = getSideMode(actions, rowState.shotSlots);
+        const nextMode = nextSideMode(currentMode, rowState.shotSlots);
+        applySideMode(actions, nextMode, rowState.shotSlots);
+        clearSide(side === SIDE.PORT ? SIDE.STARBOARD : SIDE.PORT);
 
         updateSideButtons(SIDE.PORT);
         updateSideButtons(SIDE.STARBOARD);
       };
 
-      rowState.portButtons.forEach((button, index) => {
-        button.addEventListener("click", () => handleActionClick(SIDE.PORT, index));
+      rowState.portButtons.forEach((button) => {
+        button.addEventListener("click", () => handleActionClick(SIDE.PORT));
       });
 
-      rowState.starButtons.forEach((button, index) => {
-        button.addEventListener("click", () => handleActionClick(SIDE.STARBOARD, index));
+      rowState.starButtons.forEach((button) => {
+        button.addEventListener("click", () => handleActionClick(SIDE.STARBOARD));
       });
 
       moveButton.addEventListener("click", () => {

@@ -46,7 +46,6 @@ import {
  * @property {number} shotsPerAttack
  * @property {number} grappleRange
  * @property {number} speed
- * @property {string} turnProfile
  * @property {boolean} alive
  */
 
@@ -303,7 +302,6 @@ export function createInitialState(options = {}) {
       shotsPerAttack: type.shotsPerAttack,
       grappleRange: type.grappleRange,
       speed: type.speed,
-      turnProfile: type.turnProfile,
       alive: true,
     };
   };

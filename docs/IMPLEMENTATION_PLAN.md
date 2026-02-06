@@ -23,9 +23,13 @@ Build a playable web PoC of a 1v1 naval tactics game with simultaneous 4-phase p
 ```text
 /BNav
   index.html
+  map-editor.html
   styles.css
+  map-editor.css
   /src
     main.js
+    editor/
+      map-editor.js
     game/
       constants.js
       state.js
@@ -55,6 +59,7 @@ Optional / future modules:
 - `src/util/rng.js`, `src/util/math.js`
 - `src/three/` (Three.js scene, ship models, effects)
 - `src/net/` (lobby + multiplayer networking)
+- `src/editor/` (map editor UI + validation helpers)
 
 ## 4) Core Data Model
 Define small, explicit state objects to keep simulation deterministic.
@@ -73,7 +78,6 @@ Define small, explicit state objects to keep simulation deterministic.
   - `shotsPerAttack` (1 or 2)
   - `grappleRange`
   - `speed` (planned use)
-  - `turnProfile` (planned use)
   - `alive`
 
 - **MatchState**
@@ -83,6 +87,13 @@ Define small, explicit state objects to keep simulation deterministic.
   - `ships` (2 ships)
   - `status` (`planning | executing | finished`)
   - `winnerId | draw`
+
+- **MapDefinition**
+  - `id`, `name`
+  - `width`, `height`
+  - `hazards`, `rocks`
+  - `spawns` (P1/P2 start positions + facings)
+  - `metadata` (author, notes, createdAt)
 
 - **Plan**
   - 4 entries: `{ move, action, shots? }`
@@ -102,6 +113,7 @@ Create a single source-of-truth rules document in code comments/docs.
 ### 5.0 Map Modes
 - **Default map:** curated hazards/rocks layout tuned for readable lanes.
 - **Procedural map:** random hazards/rocks with spawn safety buffers and optional seed for repeatability.
+- **Custom map:** user-authored layout created in a dedicated map editor (saved as JSON).
 
 ### 5.1 Turn Order Per Phase
 1. Resolve movement for both ships.
@@ -169,16 +181,16 @@ Add base ship types to support asymmetric play:
 - **Baghlah:** large cannons, single shot.
 
 Implementation note:
-- Keep stats data-driven (e.g., `shipTypes` table with `hp`, `turnProfile`, `cannonRange`, `speed`).
+- Keep stats data-driven (e.g., `shipTypes` table with `hp`, `cannonRange`, `speed`).
 - Start with conservative differences to avoid destabilizing PoC balance.
 
 Initial tuning (subject to change):
-- Sloop: HP 10, range 2, cannonball small, shots 1, grapple 1, turnProfile fast.
-- Cutter: HP 16, range 3, cannonball small, shots 2, grapple 1, turnProfile balanced.
-- War Brig: HP 20, range 3, cannonball medium, shots 2, grapple 1, turnProfile slow.
-- Dhow: HP 14, range 3, cannonball medium, shots 1, grapple 1, turnProfile balanced.
-- War Frigate: HP 30, range 4, cannonball large, shots 2, grapple 1, turnProfile very_slow.
-- Baghlah: HP 24, range 4, cannonball large, shots 1, grapple 1, turnProfile slow.
+- Sloop: HP 10, range 2, cannonball small, shots 1, grapple 1.
+- Cutter: HP 16, range 3, cannonball small, shots 2, grapple 1.
+- War Brig: HP 20, range 3, cannonball medium, shots 2, grapple 1.
+- Dhow: HP 14, range 3, cannonball medium, shots 1, grapple 1.
+- War Frigate: HP 30, range 4, cannonball large, shots 2, grapple 1.
+- Baghlah: HP 24, range 4, cannonball large, shots 1, grapple 1.
 
 Current wiring:
 - P1 defaults to Cutter; P2 defaults to War Brig.
@@ -205,11 +217,21 @@ Current wiring:
 Current UI implementation:
 - Phase stack per ship (vertical layout).
 - Click the center phase tile to cycle movement (turn left/forward/turn right/none).
-- Click left/right action buttons to cycle port/starboard action (none/fire/grapple).
-- Ships with 2 shots show two action buttons per side; selecting one = 1 shot, selecting both = 2 shots.
+- Click left/right action buttons to cycle port/starboard action (1 shot -> 2 shots if available -> grapple -> none).
+- Ships with 2 shots show two action buttons per side; cycling to 2 shots highlights both.
 - Selecting one side clears the other (only one action per phase).
 - Lobby screen with player count (1 vs AI / 2 hotseat), ship type selection, and map mode (default/procedural).
 - Ship headers display cannonball size, shots per attack, and range.
+
+### 6.6 Map Editor (Planned)
+- Separate `map-editor.html` with a full-screen grid editor.
+- Tool palette: wind, whirlpool (CW/CCW), rocks (small/large), erase.
+- Spawn placement for P1/P2 with facing.
+- Validation: no overlap, spawns within bounds, hazards within bounds.
+- Save/load:
+  - Local storage presets (named maps).
+  - JSON export/import for sharing.
+- Main game lobby should list saved custom maps alongside default/procedural.
 
 ### 6.3 Execution Playback
 - Phase card highlights current phase.
@@ -274,6 +296,11 @@ Status: Completed.
 - Add one hazard type (wind) if stable.
 Status: AI done, ship types done, hazards done, map modes done.
 
+### Milestone 6 - Map Editor + Custom Maps
+- Build separate map editor page with hazard palette + spawn placement.
+- Implement save/load (local storage + JSON export/import).
+- Add custom map selection in lobby and load into `createInitialState`.
+
 ## 9) Testing Strategy
 
 ### 9.1 Unit Tests (Core Rules)
@@ -301,10 +328,11 @@ Status: AI done, ship types done, hazards done, map modes done.
 - **Balance risk:** Tune HP/range only after deterministic loop feels good.
 
 ## 11) Post-MVP Expansion Hooks
-- Ship loadouts (HP, cannon range, turn profile).
+- Ship loadouts (HP, cannon range, speed).
 - Obstacles and collision damage.
 - Additional hazards with deterministic patterns.
 - Replay export/import via serialized seed + plans.
+- Map editor sharing, validation warnings, and map browser.
 - Networked PvP (lockstep with shared phase inputs).
 - 3D ship models + animated combat effects.
 - Multiplayer lobbies (create/join/host) with turn timer sync.
@@ -315,9 +343,10 @@ Status: AI done, ship types done, hazards done, map modes done.
 3. Planner + timer + playback.
 4. Combat + game-over flow.
 5. AI and hazards.
-6. Optional Three.js visual layer.
-7. Ship type loadouts + tuning pass.
-8. Multiplayer lobby + lockstep sync.
+6. Map editor + custom map import/export.
+7. Optional Three.js visual layer.
+8. Ship type loadouts + tuning pass.
+9. Multiplayer lobby + lockstep sync.
 
 ---
 

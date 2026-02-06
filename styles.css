@@ -346,9 +346,10 @@ select:disabled {
 }
 
 .action-group {
-  display: grid;
+  display: flex;
   gap: 6px;
-  justify-items: center;
+  justify-content: center;
+  align-items: center;
 }
 
 .action-btn {

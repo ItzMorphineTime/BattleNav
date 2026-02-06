@@ -31,7 +31,7 @@ Last updated: 2026-02-06
 ## UI/UX
 - Canvas grid renderer with ship facing + HP.
 - Planner panel with clickable phase selector (cycle movement and port/starboard actions).
-- Multi-shot ships show two action buttons per side to choose 1 or 2 shots.
+- Multi-shot ships show two horizontal action buttons per side; clicking cycles 1 shot -> 2 shots -> grapple -> none.
 - HUD for turn, phase, timer, and state.
 - Phase event log playback.
 - Lobby screen for player count + ship type selection (1 player vs AI / 2 player hotseat).
