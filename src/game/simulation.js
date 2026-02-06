@@ -1,4 +1,4 @@
-import { ACTION, MOVE, PHASE_COUNT } from "./constants.js";
+import { ACTION, ACTION_KIND, MOVE, PHASE_COUNT } from "./constants.js";
 import { applyHazardsPhase } from "./hazards.js";
 import { resolveCombatPhase } from "./rules-combat.js";
 import { resolveMovementPhase } from "./rules-movement.js";
@@ -8,12 +8,43 @@ import { cloneState } from "./state.js";
 /** Normalize missing phase entries so the sim stays deterministic. */
 function normalizePhasePlan(plan) {
   if (!plan) {
-    return { move: MOVE.NONE, action: ACTION.NONE };
+    return {
+      move: MOVE.NONE,
+      port: { kind: ACTION_KIND.NONE },
+      starboard: { kind: ACTION_KIND.NONE },
+    };
+  }
+  if (plan.port || plan.starboard) {
+    return {
+      move: plan.move || MOVE.NONE,
+      port: plan.port || { kind: ACTION_KIND.NONE },
+      starboard: plan.starboard || { kind: ACTION_KIND.NONE },
+    };
+  }
+  const action = plan.action || ACTION.NONE;
+  const sidePlan = { kind: ACTION_KIND.NONE };
+  if (action === ACTION.SHOOT_PORT) {
+    sidePlan.kind = ACTION_KIND.FIRE;
+    sidePlan.shots = plan.shots;
+    return { move: plan.move || MOVE.NONE, port: sidePlan, starboard: { kind: ACTION_KIND.NONE } };
+  }
+  if (action === ACTION.SHOOT_STARBOARD) {
+    sidePlan.kind = ACTION_KIND.FIRE;
+    sidePlan.shots = plan.shots;
+    return { move: plan.move || MOVE.NONE, port: { kind: ACTION_KIND.NONE }, starboard: sidePlan };
+  }
+  if (action === ACTION.GRAPPLE_PORT) {
+    sidePlan.kind = ACTION_KIND.GRAPPLE;
+    return { move: plan.move || MOVE.NONE, port: sidePlan, starboard: { kind: ACTION_KIND.NONE } };
+  }
+  if (action === ACTION.GRAPPLE_STARBOARD) {
+    sidePlan.kind = ACTION_KIND.GRAPPLE;
+    return { move: plan.move || MOVE.NONE, port: { kind: ACTION_KIND.NONE }, starboard: sidePlan };
   }
   return {
     move: plan.move || MOVE.NONE,
-    action: plan.action || ACTION.NONE,
-    shots: plan.shots,
+    port: { kind: ACTION_KIND.NONE },
+    starboard: { kind: ACTION_KIND.NONE },
   };
 }
 
@@ -25,7 +56,7 @@ function activeShips(ships) {
 /**
  * Resolve an entire 4-phase turn using deterministic rules.
  * @param {import("./state.js").MatchState} matchState
- * @param {Record<string, Array<{move:string, action:string, shots?:number}>>} plansByShipId
+ * @param {Record<string, Array<{move:string, port?:{kind:string, shots?:number}, starboard?:{kind:string, shots?:number}}>>} plansByShipId
  */
 export function resolveTurn(matchState, plansByShipId) {
   const workingState = cloneState(matchState);
@@ -60,6 +91,8 @@ export function resolveTurn(matchState, plansByShipId) {
     phaseResults.push({
       phase: phaseIndex + 1,
       phasePlansByShipId,
+      shipsAfterMovement: cloneState(movement.ships),
+      shipsAfterHazards: cloneState(hazards.ships),
       shipsAfterPhase: cloneState(workingState.ships),
       traces: combat.traces,
       movementEvents: movement.events,

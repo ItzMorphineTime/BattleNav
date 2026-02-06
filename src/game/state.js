@@ -1,5 +1,5 @@
 import {
-  ACTION,
+  ACTION_KIND,
   DEFAULT_SHIP_TYPE,
   FACINGS,
   GRID_SIZE,
@@ -14,10 +14,16 @@ import {
 } from "./constants.js";
 
 /**
+ * @typedef {Object} PhaseSidePlan
+ * @property {string} kind
+ * @property {number=} shots
+ */
+
+/**
  * @typedef {Object} PhasePlan
  * @property {string} move
- * @property {string} action
- * @property {number=} shots
+ * @property {PhaseSidePlan} port
+ * @property {PhaseSidePlan} starboard
  */
 
 /**
@@ -69,7 +75,8 @@ const DEFAULT_SPAWNS = [
 export function createEmptyPlan() {
   return Array.from({ length: PHASE_COUNT }, () => ({
     move: MOVE.NONE,
-    action: ACTION.NONE,
+    port: { kind: ACTION_KIND.NONE },
+    starboard: { kind: ACTION_KIND.NONE },
   }));
 }
 

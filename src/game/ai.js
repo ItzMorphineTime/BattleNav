@@ -1,5 +1,6 @@
 import {
   ACTION,
+  ACTION_KIND,
   DEFAULT_SHOTS_PER_ATTACK,
   GRAPPLE_RANGE,
   MOVE,
@@ -134,7 +135,7 @@ function chooseMove(attacker, target, grid) {
  * Generate a deterministic 4-phase plan for the AI ship.
  * @param {import("./state.js").MatchState} matchState
  * @param {string} aiShipId
- * @returns {Array<{move:string, action:string, shots?:number}>}
+ * @returns {Array<{move:string, port:{kind:string, shots?:number}, starboard:{kind:string, shots?:number}}>}
  */
 export function generateAiPlan(matchState, aiShipId) {
   const plan = [];
@@ -147,14 +148,40 @@ export function generateAiPlan(matchState, aiShipId) {
   let simulatedAi = { ...aiShip };
   const staticEnemy = { ...enemy };
 
+  const toSidePlan = (action) => {
+    const empty = { kind: ACTION_KIND.NONE };
+    if (action === ACTION.SHOOT_PORT) {
+      return {
+        port: {
+          kind: ACTION_KIND.FIRE,
+          shots: simulatedAi.shotsPerAttack ?? DEFAULT_SHOTS_PER_ATTACK,
+        },
+        starboard: empty,
+      };
+    }
+    if (action === ACTION.SHOOT_STARBOARD) {
+      return {
+        port: empty,
+        starboard: {
+          kind: ACTION_KIND.FIRE,
+          shots: simulatedAi.shotsPerAttack ?? DEFAULT_SHOTS_PER_ATTACK,
+        },
+      };
+    }
+    if (action === ACTION.GRAPPLE_PORT) {
+      return { port: { kind: ACTION_KIND.GRAPPLE }, starboard: empty };
+    }
+    if (action === ACTION.GRAPPLE_STARBOARD) {
+      return { port: empty, starboard: { kind: ACTION_KIND.GRAPPLE } };
+    }
+    return { port: empty, starboard: empty };
+  };
+
   for (let phase = 0; phase < PHASE_COUNT; phase += 1) {
     const action = chooseAction(simulatedAi, staticEnemy);
     const move = chooseMove(simulatedAi, staticEnemy, matchState.grid);
-    const entry = { move, action };
-    if (action === ACTION.SHOOT_PORT || action === ACTION.SHOOT_STARBOARD) {
-      entry.shots = simulatedAi.shotsPerAttack ?? DEFAULT_SHOTS_PER_ATTACK;
-    }
-    plan.push(entry);
+    const sidePlan = toSidePlan(action);
+    plan.push({ move, ...sidePlan });
     simulatedAi = applyMovePreview(simulatedAi, move, matchState.grid, staticEnemy);
   }
 

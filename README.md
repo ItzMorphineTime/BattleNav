@@ -8,9 +8,10 @@ Proof-of-concept in progress. Core loop is playable with local hotseat or AI.
 
 ## Features (Current)
 - 24x24 grid arena with facing + HP per ship
-- 4-phase planning per turn (move + action each phase)
+- 4-phase planning per turn (move + port/starboard actions each phase)
 - 30-second planning timer + execute-early
 - Deterministic phase playback with event log
+- Animated playback (movement interpolation + projectile shots + impact splashes)
 - Port/starboard shooting with per-ship cannonball size + multi-shot rules
 - Lobby screen to select player count, ship types, and map mode
 - AI opponent mode for 1-player games (simple deterministic plan generation)
@@ -25,7 +26,7 @@ Proof-of-concept in progress. Core loop is playable with local hotseat or AI.
 2) Use the planner on the right to queue 4 phases.
 3) Each phase includes:
    - Movement: None | Forward | Turn Left | Turn Right
-   - Action: None | Shoot Port | Shoot Starboard | Grapple Port | Grapple Starboard
+   - Actions (per side): None | Shoot | Grapple
 4) Hit "Execute Early" or let the 30-second timer expire.
 5) Watch the 4 phases resolve.
 

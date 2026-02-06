@@ -138,22 +138,17 @@ async function executeTurn() {
   clearEventLog();
 
   await playPhaseResults(phaseResults, {
-    delayMs: 850,
+    renderer,
+    baseState: gameState,
+    moveDurationMs: 520,
+    hazardDurationMs: 220,
+    combatDurationMs: 420,
+    pauseMs: 160,
     onPhase: async (phaseResult) => {
       setHudText(hudRefs, {
         phase: phaseResult.phase,
         state: "executing",
       });
-
-      renderer.draw(
-        {
-          ...gameState,
-          ships: phaseResult.shipsAfterPhase,
-        },
-        {
-          traces: phaseResult.traces,
-        },
-      );
 
       addLogEntry(`Phase ${phaseResult.phase}:`);
       for (const message of phaseResult.movementEvents) {

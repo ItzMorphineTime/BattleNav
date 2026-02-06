@@ -5,10 +5,11 @@ Last updated: 2026-02-06
 ## Core Gameplay
 - 24x24 grid arena with two ships, facing, and HP.
 - Curated default map layout with tuned hazards/rocks.
-- 4-phase planning per turn (move + action per phase).
+- 4-phase planning per turn (move + port/starboard actions per phase).
 - 30-second planning timer with execute-early button.
 - Deterministic phase-by-phase execution playback.
 - Port/starboard shooting with per-ship range, cannonball damage, and selectable shot count.
+- Port and starboard actions can be selected simultaneously each phase.
 - Grapple action (range 1) with instant win.
 - Win/draw detection and restart flow.
 - Ship type defaults defined in data (Sloop, Cutter, War Brig, Dhow, War Frigate, Baghlah).
@@ -31,9 +32,11 @@ Last updated: 2026-02-06
 ## UI/UX
 - Canvas grid renderer with ship facing + HP.
 - Planner panel with clickable phase selector (cycle movement and port/starboard actions).
-- Multi-shot ships show two horizontal action buttons per side; clicking cycles 1 shot -> 2 shots -> grapple -> none.
+- Multi-shot ships show two horizontal action buttons per side; each side cycles independently
+  (1 shot -> 2 shots -> grapple -> none).
 - HUD for turn, phase, timer, and state.
 - Phase event log playback.
+- Animated phase playback with arc turns, collision bumps, hazard displacement, projectile shots, obstacle explosions, and miss splashes.
 - Lobby screen for player count + ship type selection (1 player vs AI / 2 player hotseat).
 - Lobby map selection (default or procedural).
 - Back to Lobby control in match UI.

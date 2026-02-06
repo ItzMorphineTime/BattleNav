@@ -96,10 +96,10 @@ Define small, explicit state objects to keep simulation deterministic.
   - `metadata` (author, notes, createdAt)
 
 - **Plan**
-  - 4 entries: `{ move, action, shots? }`
+  - 4 entries: `{ move, port, starboard }`
   - `move`: `none | forward | turn_left | turn_right`
-  - `action`: `none | shoot_port | shoot_starboard | grapple_port | grapple_starboard`
-  - `shots` (optional): number of cannon shots to fire when action is `shoot_*`
+  - `port` / `starboard`: `{ kind: none | fire | grapple, shots? }`
+  - `shots` (optional): number of cannon shots to fire for that side
 
 - **PhaseLog**
   - Inputs selected
@@ -209,7 +209,7 @@ Current wiring:
 ### 6.2 Planning Panel
 - 4 rows (Phase 1-4), each with two dropdowns/buttons:
   - Movement selector
-  - Action selector
+  - Action selectors (port + starboard)
 - Live validation and quick reset/clear controls.
 - Lock-in button (optional early ready).
 - Player count selection in lobby determines AI vs hotseat.
@@ -217,9 +217,8 @@ Current wiring:
 Current UI implementation:
 - Phase stack per ship (vertical layout).
 - Click the center phase tile to cycle movement (turn left/forward/turn right/none).
-- Click left/right action buttons to cycle port/starboard action (1 shot -> 2 shots if available -> grapple -> none).
+- Click left/right action buttons to cycle each side independently (1 shot -> 2 shots if available -> grapple -> none).
 - Ships with 2 shots show two action buttons per side; cycling to 2 shots highlights both.
-- Selecting one side clears the other (only one action per phase).
 - Lobby screen with player count (1 vs AI / 2 hotseat), ship type selection, and map mode (default/procedural).
 - Ship headers display cannonball size, shots per attack, and range.
 
@@ -235,7 +234,9 @@ Current UI implementation:
 
 ### 6.3 Execution Playback
 - Phase card highlights current phase.
-- Animate movement and shots (simple line flash/projectile).
+- Animate movement and shots (interpolated movement, projectile streaks).
+- Turn animations follow curved arcs; collisions show bump feedback.
+- Impact VFX: explosions on rock hits, water splashes on misses.
 - Delay between phases (e.g., 500-900 ms) with speed toggle.
 - Display concise event text per phase.
 

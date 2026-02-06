@@ -220,7 +220,7 @@ export function createPlanner(rootElement, ships) {
       );
       updateMoveButton(moveButton, rowState.move);
 
-      // Keep a single action per phase: grapple overrides fire, and one side only.
+      // Keep a single action per side: grapple overrides fire.
       const updateSideButtons = (side) => {
         const actions = side === SIDE.PORT ? rowState.portActions : rowState.starActions;
         const buttons = side === SIDE.PORT ? rowState.portButtons : rowState.starButtons;
@@ -228,19 +228,12 @@ export function createPlanner(rootElement, ships) {
         buttons.forEach((button, index) => updateActionButton(button, label, actions[index]));
       };
 
-      const clearSide = (side) => {
-        const actions = side === SIDE.PORT ? rowState.portActions : rowState.starActions;
-        actions.fill(ACTION_KIND.NONE);
-      };
-
       // Cycle actions for the selected side (1 shot -> 2 shots -> grapple -> none).
       const handleActionClick = (side) => {
         const actions = side === SIDE.PORT ? rowState.portActions : rowState.starActions;
-        const otherActions = side === SIDE.PORT ? rowState.starActions : rowState.portActions;
         const currentMode = getSideMode(actions, rowState.shotSlots);
         const nextMode = nextSideMode(currentMode, rowState.shotSlots);
         applySideMode(actions, nextMode, rowState.shotSlots);
-        clearSide(side === SIDE.PORT ? SIDE.STARBOARD : SIDE.PORT);
 
         updateSideButtons(SIDE.PORT);
         updateSideButtons(SIDE.STARBOARD);
@@ -274,26 +267,27 @@ export function createPlanner(rootElement, ships) {
 
   /** Convert a row UI state into a phase plan entry. */
   function rowToPlan(row) {
-    const { move, portActions, starActions } = row.rowState;
-    let action = ACTION.NONE;
-    let shots = undefined;
-    const portGrapple = portActions.includes(ACTION_KIND.GRAPPLE);
-    const starGrapple = starActions.includes(ACTION_KIND.GRAPPLE);
-    const portShots = portActions.filter((value) => value === ACTION_KIND.FIRE).length;
-    const starShots = starActions.filter((value) => value === ACTION_KIND.FIRE).length;
+    const { move, portActions, starActions, shotSlots } = row.rowState;
 
-    if (portGrapple) {
-      action = ACTION.GRAPPLE_PORT;
-    } else if (starGrapple) {
-      action = ACTION.GRAPPLE_STARBOARD;
-    } else if (portShots > 0) {
-      action = ACTION.SHOOT_PORT;
-      shots = portShots;
-    } else if (starShots > 0) {
-      action = ACTION.SHOOT_STARBOARD;
-      shots = starShots;
-    }
-    return shots ? { move, action, shots } : { move, action };
+    const buildSidePlan = (actions) => {
+      const mode = getSideMode(actions, shotSlots);
+      if (mode === ACTION_MODE.GRAPPLE) {
+        return { kind: ACTION_KIND.GRAPPLE };
+      }
+      if (mode === ACTION_MODE.FIRE2) {
+        return { kind: ACTION_KIND.FIRE, shots: Math.min(2, shotSlots) };
+      }
+      if (mode === ACTION_MODE.FIRE1) {
+        return { kind: ACTION_KIND.FIRE, shots: 1 };
+      }
+      return { kind: ACTION_KIND.NONE };
+    };
+
+    return {
+      move,
+      port: buildSidePlan(portActions),
+      starboard: buildSidePlan(starActions),
+    };
   }
 
   /** Read the full plan for each ship. */
@@ -371,23 +365,41 @@ export function createPlanner(rootElement, ships) {
       row.rowState.move = entry.move || MOVE.NONE;
       row.rowState.portActions.fill(ACTION_KIND.NONE);
       row.rowState.starActions.fill(ACTION_KIND.NONE);
-      if (entry.action && entry.action !== ACTION.NONE) {
-        const desiredShots =
-          entry.action === ACTION.SHOOT_PORT || entry.action === ACTION.SHOOT_STARBOARD
-            ? Math.max(1, Math.min(entry.shots || row.rowState.shotSlots, row.rowState.shotSlots))
-            : 1;
+      const applySidePlan = (actions, sidePlan) => {
+        if (!sidePlan || !sidePlan.kind || sidePlan.kind === ACTION_KIND.NONE) {
+          return;
+        }
+        if (sidePlan.kind === ACTION_KIND.GRAPPLE) {
+          actions[0] = ACTION_KIND.GRAPPLE;
+          return;
+        }
+        if (sidePlan.kind === ACTION_KIND.FIRE) {
+          const desiredShots = Math.max(1, Math.min(sidePlan.shots || 1, row.rowState.shotSlots));
+          for (let i = 0; i < desiredShots; i += 1) {
+            actions[i] = ACTION_KIND.FIRE;
+          }
+        }
+      };
+
+      if (entry.port || entry.starboard) {
+        applySidePlan(row.rowState.portActions, entry.port);
+        applySidePlan(row.rowState.starActions, entry.starboard);
+      } else if (entry.action && entry.action !== ACTION.NONE) {
+        const legacy = { kind: ACTION_KIND.NONE };
         if (entry.action === ACTION.SHOOT_PORT) {
-          for (let i = 0; i < desiredShots; i += 1) {
-            row.rowState.portActions[i] = ACTION_KIND.FIRE;
-          }
+          legacy.kind = ACTION_KIND.FIRE;
+          legacy.shots = entry.shots || 1;
+          applySidePlan(row.rowState.portActions, legacy);
         } else if (entry.action === ACTION.SHOOT_STARBOARD) {
-          for (let i = 0; i < desiredShots; i += 1) {
-            row.rowState.starActions[i] = ACTION_KIND.FIRE;
-          }
+          legacy.kind = ACTION_KIND.FIRE;
+          legacy.shots = entry.shots || 1;
+          applySidePlan(row.rowState.starActions, legacy);
         } else if (entry.action === ACTION.GRAPPLE_PORT) {
-          row.rowState.portActions[0] = ACTION_KIND.GRAPPLE;
+          legacy.kind = ACTION_KIND.GRAPPLE;
+          applySidePlan(row.rowState.portActions, legacy);
         } else if (entry.action === ACTION.GRAPPLE_STARBOARD) {
-          row.rowState.starActions[0] = ACTION_KIND.GRAPPLE;
+          legacy.kind = ACTION_KIND.GRAPPLE;
+          applySidePlan(row.rowState.starActions, legacy);
         }
       }
       updateMoveButton(row.rowState.moveButton, row.rowState.move);

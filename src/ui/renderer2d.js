@@ -200,7 +200,9 @@ export class Renderer2D {
 
     ctx.save();
     ctx.translate(cx, cy);
-    ctx.rotate(facingAngle(ship.facing));
+    const angle =
+      typeof ship.visualAngle === "number" ? ship.visualAngle : facingAngle(ship.facing);
+    ctx.rotate(angle);
     ctx.fillStyle = SHIP_COLORS[ship.id] || "#ffffff";
     ctx.beginPath();
     ctx.moveTo(size, 0);
@@ -261,10 +263,72 @@ export class Renderer2D {
     }
   }
 
+  /** Draw animated projectiles (shots, grapples). */
+  drawProjectiles(projectiles) {
+    const { ctx, cell } = this;
+    if (!projectiles || projectiles.length === 0) {
+      return;
+    }
+
+    for (const projectile of projectiles) {
+      const { px, py } = this.gridToPixel(projectile.x, projectile.y);
+      const cx = px + cell / 2;
+      const cy = py + cell / 2;
+      const size = cell * (projectile.size ?? 0.08);
+      ctx.save();
+      ctx.globalAlpha = projectile.alpha ?? 1;
+      ctx.fillStyle = projectile.color || "rgba(255, 180, 120, 0.95)";
+      ctx.beginPath();
+      ctx.arc(cx, cy, size, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+  }
+
+  /** Draw transient impact effects. */
+  drawEffects(effects) {
+    const { ctx, cell } = this;
+    if (!effects || effects.length === 0) {
+      return;
+    }
+
+    for (const effect of effects) {
+      const { px, py } = this.gridToPixel(effect.x, effect.y);
+      const cx = px + cell / 2;
+      const cy = py + cell / 2;
+      const radius = cell * (effect.radius ?? 0.3);
+      ctx.save();
+      ctx.globalAlpha = effect.alpha ?? 1;
+
+      if (effect.type === "explosion") {
+        const gradient = ctx.createRadialGradient(cx, cy, radius * 0.2, cx, cy, radius);
+        gradient.addColorStop(0, "rgba(255, 220, 140, 0.95)");
+        gradient.addColorStop(0.6, "rgba(255, 150, 80, 0.7)");
+        gradient.addColorStop(1, "rgba(255, 120, 60, 0)");
+        ctx.fillStyle = gradient;
+        ctx.beginPath();
+        ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+        ctx.fill();
+      } else if (effect.type === "splash") {
+        ctx.strokeStyle = "rgba(180, 235, 255, 0.9)";
+        ctx.lineWidth = Math.max(1, Math.floor(cell * 0.07));
+        ctx.beginPath();
+        ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.lineWidth = Math.max(1, Math.floor(cell * 0.05));
+        ctx.beginPath();
+        ctx.arc(cx, cy, radius * 0.6, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+
+      ctx.restore();
+    }
+  }
+
   /**
    * Render the entire frame (grid, hazards, ships, traces).
    * @param {import("../game/state.js").MatchState} matchState
-   * @param {{traces?: Array<Object>}} overlay
+   * @param {{traces?: Array<Object>, projectiles?: Array<Object>, effects?: Array<Object>}} overlay
    */
   draw(matchState, overlay = {}) {
     const { ctx, canvas } = this;
@@ -277,5 +341,7 @@ export class Renderer2D {
       }
     }
     this.drawTraces(overlay.traces);
+    this.drawProjectiles(overlay.projectiles);
+    this.drawEffects(overlay.effects);
   }
 }
