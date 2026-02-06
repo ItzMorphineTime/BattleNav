@@ -191,7 +191,7 @@ export function createPlanner(rootElement, ships) {
 
       const portGroup = document.createElement("div");
       portGroup.className = `action-group ${SIDE.PORT}`;
-      portButtons.forEach((button) => portGroup.appendChild(button));
+      [...portButtons].reverse().forEach((button) => portGroup.appendChild(button));
 
       const starGroup = document.createElement("div");
       starGroup.className = `action-group ${SIDE.STARBOARD}`;
