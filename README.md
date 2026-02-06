@@ -1,7 +1,7 @@
 # ⚓ Battle Navigation - Tactical Naval Duel
 
 <p align="center">
-  <img src="screenshots/Screenshot_01.png" alt="Battle Navigation Arena" width="640">
+  <img src="Screenshots/Screenshot_01.png" alt="Battle Navigation Arena" width="640">
 </p>
 
 [![Play Now](https://img.shields.io/badge/Play-Now-brightgreen?style=for-the-badge)](https://itzmorphinetime.github.io/BattleNav/)
@@ -18,7 +18,7 @@ Plan four micro-actions under a 30 second timer, then watch the turn resolve pha
 ## 🖼️ Screenshots
 
 <p align="center">
-  <img src="screenshots/Screenshot_02.png" alt="Hazards and Combat" width="640">
+  <img src="Screenshots/Screenshot_02.png" alt="Hazards and Combat" width="640">
 </p>
 
 ---
