@@ -60,16 +60,19 @@ function shipById(ships, id) {
   return ships.find((ship) => ship.id === id);
 }
 
-function arcAroundCorner(start, corner, end, t) {
-  const startVec = { x: start.x - corner.x, y: start.y - corner.y };
-  const endVec = { x: end.x - corner.x, y: end.y - corner.y };
-  const radius = Math.max(0.0001, Math.hypot(startVec.x, startVec.y));
-  const startAngle = Math.atan2(startVec.y, startVec.x);
-  const endAngle = Math.atan2(endVec.y, endVec.x);
-  const angle = lerpAngle(startAngle, endAngle, t);
+/**
+ * Quadratic Bézier from p0 to p2 with control point p1.
+ * Tangents at t=0 and t=1 align with (p0→p1) and (p1→p2), matching the L-turn legs.
+ * @param {{x:number,y:number}} p0
+ * @param {{x:number,y:number}} p1
+ * @param {{x:number,y:number}} p2
+ * @param {number} t
+ */
+function quadraticBezier2d(p0, p1, p2, t) {
+  const u = 1 - t;
   return {
-    x: corner.x + Math.cos(angle) * radius,
-    y: corner.y + Math.sin(angle) * radius,
+    x: u * u * p0.x + 2 * u * t * p1.x + t * t * p2.x,
+    y: u * u * p0.y + 2 * u * t * p1.y + t * t * p2.y,
   };
 }
 
@@ -161,7 +164,12 @@ function positionForProfile(profile, t) {
       };
     }
     if (profile.step1 && profile.step2) {
-      return arcAroundCorner({ x: from.x, y: from.y }, profile.step1, { x: to.x, y: to.y }, t);
+      return quadraticBezier2d(
+        { x: from.x, y: from.y },
+        profile.step1,
+        { x: to.x, y: to.y },
+        t,
+      );
     }
   }
 
