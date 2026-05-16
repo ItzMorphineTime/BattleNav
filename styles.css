@@ -83,6 +83,26 @@ body {
   font-size: 0.9rem;
 }
 
+.lobby-input {
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(68, 118, 146, 0.7);
+  background: rgba(8, 24, 36, 0.85);
+  color: var(--text);
+  font-size: 0.95rem;
+}
+
+.lobby-input::placeholder {
+  color: rgba(200, 220, 235, 0.45);
+}
+
+.lobby-hint {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--text-soft);
+  line-height: 1.35;
+}
+
 .lobby-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));

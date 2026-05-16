@@ -24,6 +24,8 @@ const lobbyPlayers = document.getElementById("lobby-players");
 const lobbyP1Type = document.getElementById("lobby-p1-type");
 const lobbyP2Type = document.getElementById("lobby-p2-type");
 const lobbyMap = document.getElementById("lobby-map");
+const lobbySeedField = document.getElementById("lobby-seed-field");
+const lobbyMapSeed = document.getElementById("lobby-map-seed");
 const lobbyNote = document.getElementById("lobby-note");
 
 const hudRefs = {
@@ -44,6 +46,8 @@ let lobbySettings = {
   p1TypeId: DEFAULT_SHIP_TYPE,
   p2TypeId: "war_brig",
   mapMode: MAP_MODE.DEFAULT,
+  /** @type {string} */
+  mapSeed: "",
 };
 
 // Countdown timer drives auto-execution when it hits zero.
@@ -184,10 +188,15 @@ async function executeTurn() {
 /** Reset match state from lobby settings. */
 function restartMatch() {
   timer.stop();
+  const proceduralSeed =
+    lobbySettings.mapMode === MAP_MODE.PROCEDURAL && lobbySettings.mapSeed
+      ? lobbySettings.mapSeed
+      : undefined;
   gameState = createInitialState({
     p1TypeId: lobbySettings.p1TypeId,
     p2TypeId: lobbySettings.p2TypeId,
     mapMode: lobbySettings.mapMode,
+    mapSeed: proceduralSeed,
   });
   aiEnabled = lobbySettings.playerCount === 1;
   hideResult();
@@ -214,6 +223,14 @@ function updateLobbyNote() {
     lobbyPlayers.value === "1"
       ? "P2 will be controlled by AI in 1 Player mode."
       : "Both captains are controlled locally (hotseat).";
+}
+
+/** Show procedural seed input only when that map mode is selected. */
+function updateLobbySeedFieldVisibility() {
+  if (!lobbySeedField) {
+    return;
+  }
+  lobbySeedField.classList.toggle("hidden", lobbyMap.value !== MAP_MODE.PROCEDURAL);
 }
 
 /** Switch to lobby screen. */
@@ -250,6 +267,10 @@ lobbyPlayers.addEventListener("change", () => {
   updateLobbyNote();
 });
 
+lobbyMap.addEventListener("change", () => {
+  updateLobbySeedFieldVisibility();
+});
+
 lobbyForm.addEventListener("submit", (event) => {
   event.preventDefault();
   lobbySettings = {
@@ -257,6 +278,7 @@ lobbyForm.addEventListener("submit", (event) => {
     p1TypeId: lobbyP1Type.value,
     p2TypeId: lobbyP2Type.value,
     mapMode: lobbyMap.value,
+    mapSeed: lobbyMapSeed ? lobbyMapSeed.value.trim() : "",
   };
   hideLobby();
   restartMatch();
@@ -269,5 +291,9 @@ lobbyP2Type.value = lobbySettings.p2TypeId;
 if (lobbyMap) {
   lobbyMap.value = lobbySettings.mapMode;
 }
+if (lobbyMapSeed) {
+  lobbyMapSeed.value = lobbySettings.mapSeed;
+}
 updateLobbyNote();
+updateLobbySeedFieldVisibility();
 showLobby();

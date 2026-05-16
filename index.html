@@ -39,6 +39,19 @@
             </select>
           </div>
 
+          <div class="lobby-field lobby-field-seed hidden" id="lobby-seed-field">
+            <label for="lobby-map-seed">Procedural seed (optional)</label>
+            <input
+              id="lobby-map-seed"
+              class="lobby-input"
+              type="text"
+              maxlength="64"
+              autocomplete="off"
+              placeholder="Empty = random each match"
+            />
+            <p class="lobby-hint">Use the same text or number to reproduce a procedural layout.</p>
+          </div>
+
           <div class="lobby-note" id="lobby-note">
             P2 will be controlled by AI in 1 Player mode.
           </div>
@@ -80,7 +93,7 @@
 
       <section class="log-card">
         <h2>Phase Log</h2>
-        <ul id="event-log"></ul>
+        <ul id="event-log" class="event-log" aria-live="polite" aria-relevant="additions"></ul>
       </section>
     </div>
 

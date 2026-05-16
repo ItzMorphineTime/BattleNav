@@ -1,6 +1,6 @@
 # Implemented Features
 
-Last updated: 2026-02-06
+Last updated: 2026-05-16
 
 ## Core Gameplay
 - 24x24 grid arena with two ships, facing, and HP.
@@ -28,7 +28,8 @@ Last updated: 2026-02-06
 - Turning requires the forward tile (current facing) to be clear; otherwise rotate in place.
 - Turn collisions are checked at both steps; ships cannot pass through each other.
 - Ship stats applied per type (HP, cannon range, grapple range, cannonball size, shots per attack).
-- Hazards applied after movement with deterministic effects.
+- Hazards applied after movement with deterministic effects;
+  **whirlpool** CW/CCW uses the same **`turn_right`** / **`turn_left`** facing steps as `geometry.js`.
 
 ## UI/UX
 - Canvas grid renderer with ship facing + HP.
@@ -37,10 +38,12 @@ Last updated: 2026-02-06
   (1 shot -> 2 shots -> grapple -> none).
 - Port-side action buttons are ordered by distance from the ship (2, 1, move, 1, 2).
 - HUD for turn, phase, timer, and state.
-- Phase event log playback.
-- Animated phase playback with arc turns, collision bumps, hazard displacement, projectile shots, obstacle explosions, and miss splashes.
+- Phase event log playback; log list exposes `aria-live` for assistive tech.
+- Animated phase playback with Bézier movement turns, **whirlpool L-tweens**
+  (same integer-grid quadratic as `turn_left` / `turn_right` + `lerpAngle` sprite spin as movement), wind slides,
+  collision bumps, hazard displacement, projectile shots, obstacle explosions, and miss splashes.
 - Lobby screen for player count + ship type selection (1 player vs AI / 2 player hotseat).
-- Lobby map selection (default or procedural).
+- Lobby map selection (default or procedural) with optional **procedural seed** for repeatable layouts.
 - Back to Lobby control in match UI.
 - Ship headers show shots per attack, cannonball size, and range.
 
@@ -49,12 +52,18 @@ Last updated: 2026-02-06
 - Local hotseat support (both plans in the planner).
 - Procedural map generator with spawn safety buffer for hazards/rocks.
 - Procedural map config centralized in constants and JSDoc comments across core modules.
+- Shared **`geometry.js`** (grid vectors, facing after turn left/right, broadside directions),
+  **`plan-normalize.js`** (single-phase plan shape + legacy `action` compatibility), and whirlpool playback helpers
+  in **`hazards.js`** (`classifyWhirlpoolForPlayback`, **`getWhirlpoolKneeTile`**
+  matching the manoeuvre **forward-leg** Bézier knee when valid, spin fallback otherwise).
+- `cloneState()` uses `structuredClone` when available with JSON fallback.
+- Backlog tracked in **`docs/IMPROVEMENTS.md`**.
 
 ---
 
 # Planned Next
 - Replay log export/import.
 - AI heuristic upgrade (candidate plan scoring).
-- Optional module cleanup (types, input, util helpers).
+- Further module cleanup (shared types, dedicated input layer, tests).
 - 3D ships + animated combat effects (Three.js layer).
 - Multiplayer lobbies (create/join/host) + turn sync.

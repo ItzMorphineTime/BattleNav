@@ -20,40 +20,50 @@ Build a playable web PoC of a 1v1 naval tactics game with simultaneous 4-phase p
 - **Visual polish (later):** Animation system for ship movement/turns + cannon VFX synced to phase playback.
 
 ## 3) Project Structure
+
+### Current repository layout
 ```text
-/BNav
+/BattleNav  (clone folder name may vary)
   index.html
-  map-editor.html
   styles.css
-  map-editor.css
+  /Screenshots          (readme assets)
   /src
     main.js
-    editor/
-      map-editor.js
-    game/
+    /game
       constants.js
+      geometry.js       (shared grid vectors, facing turns, broadside rays)
+      plan-normalize.js (single-phase plan shape + legacy ACTION mapping)
       state.js
       simulation.js
       rules-movement.js
       rules-combat.js
       rules-win.js
-      hazards.js (stub for MVP)
+      hazards.js
       ai.js
-    ui/
+    /ui
       hud.js
       planner.js
       timer.js
       playback.js
       renderer2d.js
-  /assets
-    ships/
-    sfx/
   /docs
     IMPLEMENTATION_PLAN.md
     IMPLEMENTED.md
+    IMPROVEMENTS.md
 ```
 
-Optional / future modules:
+### Planned (not yet in repo)
+From milestones / roadmap — see `docs/IMPROVEMENTS.md`.
+
+```text
+  map-editor.html
+  map-editor.css
+  /src/editor/map-editor.js
+  /assets/ships/
+  /assets/sfx/
+```
+
+Optional / future modules (unchanged intent):
 - `src/game/types.js` (JSDoc typedefs)
 - `src/ui/input.js`
 - `src/util/rng.js`, `src/util/math.js`
@@ -124,7 +134,9 @@ Create a single source-of-truth rules document in code comments/docs.
 Current hazard rules:
 - **Wind currents:** if a ship ends a phase on a wind tile, it is pushed 1 tile in the wind direction if clear.
 - **Whirlpools:** 2x2 hazard with a `spin` (CW/CCW). Ships on any of its tiles rotate 90 degrees
-  in the whirlpool's spin direction and move to the opposite corner of the 2x2.
+  in the whirlpool's spin direction (CW = same facing step as **`turn_right`**; CCW as **`turn_left`**)
+  and move to the opposite corner of the 2×2 **when** the destination is clear.
+  Playback (`playback.js`): opposite-corner tween matches **movement turns** — the Bézier knee is the **same integer tile as the first manoeuvre step** (`from` + facing vector) when it lies on the L to the opposite tile; Bézier `(from → knee → to)` and sprite rules (`lerpAngle`, discrete `facing` flip at `t=0.5`) reuse `playback.js` manoeuvre-phase logic; spin-only knee is fallback if that L does not apply. Pivot-only whirl (blocked slide) still rotates in place.
 - **Rocks:** block movement. Large rocks block cannon fire; small rocks do not.
 
 ### 5.2 Movement Rules (MVP)

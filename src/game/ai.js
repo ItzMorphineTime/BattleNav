@@ -2,42 +2,13 @@ import {
   ACTION,
   ACTION_KIND,
   DEFAULT_SHOTS_PER_ATTACK,
+  FALLBACK_CANNON_RANGE,
   GRAPPLE_RANGE,
   MOVE,
   PHASE_COUNT,
-  SHOOT_RANGE,
   SIDE,
 } from "./constants.js";
-
-/** Direction lookup for grid movement. */
-const DIRECTION_VECTORS = {
-  N: { x: 0, y: -1 },
-  E: { x: 1, y: 0 },
-  S: { x: 0, y: 1 },
-  W: { x: -1, y: 0 },
-};
-
-const PORT_DIRECTION = {
-  N: "W",
-  E: "N",
-  S: "E",
-  W: "S",
-};
-
-const STARBOARD_DIRECTION = {
-  N: "E",
-  E: "S",
-  S: "W",
-  W: "N",
-};
-
-const TURN_LEFT = { N: "W", W: "S", S: "E", E: "N" };
-const TURN_RIGHT = { N: "E", E: "S", S: "W", W: "N" };
-
-/** Resolve port/starboard into an absolute facing. */
-function sideDirection(facing, side) {
-  return side === SIDE.PORT ? PORT_DIRECTION[facing] : STARBOARD_DIRECTION[facing];
-}
+import { DIRECTION_VECTORS, FACING_TURN_LEFT, FACING_TURN_RIGHT, sideDirection } from "./geometry.js";
 
 function inLineRange(attacker, target, direction, range) {
   const vec = DIRECTION_VECTORS[direction];
@@ -64,7 +35,7 @@ function chooseTurn(current, desired) {
   if (current === desired) {
     return MOVE.NONE;
   }
-  const left = TURN_LEFT[current];
+  const left = FACING_TURN_LEFT[current];
   if (left === desired) {
     return MOVE.TURN_LEFT;
   }
@@ -93,16 +64,16 @@ function applyMovePreview(ship, move, grid, enemy) {
     next.x += vec.x;
     next.y += vec.y;
   } else if (move === MOVE.TURN_LEFT) {
-    next.facing = TURN_LEFT[ship.facing];
+    next.facing = FACING_TURN_LEFT[ship.facing];
   } else if (move === MOVE.TURN_RIGHT) {
-    next.facing = TURN_RIGHT[ship.facing];
+    next.facing = FACING_TURN_RIGHT[ship.facing];
   }
   return next;
 }
 
 /** Greedy action choice (grapple > shoot > none) based on current alignment. */
 function chooseAction(attacker, target) {
-  const cannonRange = attacker.cannonRange ?? SHOOT_RANGE;
+  const cannonRange = attacker.cannonRange ?? FALLBACK_CANNON_RANGE;
   const grappleRange = attacker.grappleRange ?? GRAPPLE_RANGE;
   const portDir = sideDirection(attacker.facing, SIDE.PORT);
   const starDir = sideDirection(attacker.facing, SIDE.STARBOARD);

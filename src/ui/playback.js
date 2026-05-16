@@ -1,4 +1,6 @@
 import { MOVE, ROCK_SIZE } from "../game/constants.js";
+import { classifyWhirlpoolForPlayback } from "../game/hazards.js";
+import { DIRECTION_VECTORS, FACING_TURN_LEFT, FACING_TURN_RIGHT } from "../game/geometry.js";
 
 /** @param {number} ms */
 function sleep(ms) {
@@ -17,16 +19,6 @@ const SHOT_COLORS = {
 };
 
 const GRAPPLE_COLOR = "rgba(120, 240, 245, 0.9)";
-
-const DIRECTION_VECTORS = {
-  N: { x: 0, y: -1 },
-  E: { x: 1, y: 0 },
-  S: { x: 0, y: 1 },
-  W: { x: -1, y: 0 },
-};
-
-const TURN_LEFT = { N: "W", W: "S", S: "E", E: "N" };
-const TURN_RIGHT = { N: "E", E: "S", S: "W", W: "N" };
 
 function lerp(a, b, t) {
   return a + (b - a) * t;
@@ -76,6 +68,55 @@ function quadraticBezier2d(p0, p1, p2, t) {
   };
 }
 
+/** Wind / whirl / other hazard motion between movement and combat sub-steps. */
+function interpolateHazardShips(fromShips, toShips, grid, t) {
+  return toShips.map((to) => {
+    const from = shipById(fromShips, to.id) || to;
+    const whirl = classifyWhirlpoolForPlayback(from, to, grid);
+    if (whirl) {
+      const startAngle = facingToAngle(from.facing);
+      const endAngle = facingToAngle(to.facing);
+      if (from.x === to.x && from.y === to.y) {
+        return {
+          ...from,
+          ...to,
+          x: from.x,
+          y: from.y,
+          facing: t < 0.5 ? from.facing : to.facing,
+          visualAngle: lerpAngle(startAngle, endAngle, t),
+        };
+      }
+
+      const pos = quadraticBezier2d(
+        { x: from.x, y: from.y },
+        whirl.kneeTile,
+        { x: to.x, y: to.y },
+        t,
+      );
+      return {
+        ...from,
+        ...to,
+        x: pos.x,
+        y: pos.y,
+        facing: t < 0.5 ? from.facing : to.facing,
+        visualAngle: lerpAngle(startAngle, endAngle, t),
+      };
+    }
+
+    const startAngle = facingToAngle(from.facing);
+    const endAngle = facingToAngle(to.facing);
+    const visualAngle = lerpAngle(startAngle, endAngle, t);
+    return {
+      ...from,
+      ...to,
+      x: lerp(from.x, to.x, t),
+      y: lerp(from.y, to.y, t),
+      facing: t < 0.5 ? from.facing : to.facing,
+      visualAngle,
+    };
+  });
+}
+
 function bumpFactor(t) {
   if (t <= 0) {
     return 0;
@@ -96,7 +137,8 @@ function buildMovementProfiles(fromShips, toShips, phasePlansByShipId) {
     let sideVec = null;
 
     if (move === MOVE.TURN_LEFT || move === MOVE.TURN_RIGHT) {
-      const nextFacing = move === MOVE.TURN_LEFT ? TURN_LEFT[from.facing] : TURN_RIGHT[from.facing];
+      const nextFacing =
+        move === MOVE.TURN_LEFT ? FACING_TURN_LEFT[from.facing] : FACING_TURN_RIGHT[from.facing];
       sideVec = DIRECTION_VECTORS[nextFacing];
       if (step1 && sideVec) {
         step2 = { x: step1.x + sideVec.x, y: step1.y + sideVec.y };
@@ -189,22 +231,6 @@ function interpolateMovementShips(profiles, t) {
       ...from,
       x: position.x,
       y: position.y,
-      facing: t < 0.5 ? from.facing : to.facing,
-      visualAngle,
-    };
-  });
-}
-
-function interpolateLinearShips(fromShips, toShips, t) {
-  return toShips.map((to) => {
-    const from = shipById(fromShips, to.id) || to;
-    const startAngle = facingToAngle(from.facing);
-    const endAngle = facingToAngle(to.facing);
-    const visualAngle = lerpAngle(startAngle, endAngle, t);
-    return {
-      ...from,
-      x: lerp(from.x, to.x, t),
-      y: lerp(from.y, to.y, t),
       facing: t < 0.5 ? from.facing : to.facing,
       visualAngle,
     };
@@ -390,10 +416,13 @@ function buildCombatOverlay(animations, progress) {
   };
 }
 
-function shipsMoved(fromShips, toShips) {
+/** True when hazard resolution changed ship pose (wind slide, whirl move, whirl pivot-only facing). */
+function hazardInterpolationNeeded(fromShips, toShips) {
   return toShips.some((ship) => {
     const from = shipById(fromShips, ship.id) || ship;
-    return from.x !== ship.x || from.y !== ship.y;
+    return (
+      from.x !== ship.x || from.y !== ship.y || from.facing !== ship.facing
+    );
   });
 }
 
@@ -413,9 +442,14 @@ async function animatePhase(renderer, baseState, fromShips, phaseResult, options
     renderer.draw({ ...baseState, ships });
   });
 
-  if (shipsMoved(shipsAfterMovement, shipsAfterHazards)) {
+  if (hazardInterpolationNeeded(shipsAfterMovement, shipsAfterHazards)) {
     await animate(options.hazardDurationMs, (t) => {
-      const ships = interpolateLinearShips(shipsAfterMovement, shipsAfterHazards, t);
+      const ships = interpolateHazardShips(
+        shipsAfterMovement,
+        shipsAfterHazards,
+        baseState.grid,
+        t,
+      );
       renderer.draw({ ...baseState, ships });
     });
   }

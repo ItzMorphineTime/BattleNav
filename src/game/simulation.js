@@ -1,52 +1,10 @@
-import { ACTION, ACTION_KIND, MOVE, PHASE_COUNT } from "./constants.js";
+import { PHASE_COUNT } from "./constants.js";
 import { applyHazardsPhase } from "./hazards.js";
+import { normalizePhasePlan } from "./plan-normalize.js";
 import { resolveCombatPhase } from "./rules-combat.js";
 import { resolveMovementPhase } from "./rules-movement.js";
 import { applyCombatResults } from "./rules-win.js";
 import { cloneState } from "./state.js";
-
-/** Normalize missing phase entries so the sim stays deterministic. */
-function normalizePhasePlan(plan) {
-  if (!plan) {
-    return {
-      move: MOVE.NONE,
-      port: { kind: ACTION_KIND.NONE },
-      starboard: { kind: ACTION_KIND.NONE },
-    };
-  }
-  if (plan.port || plan.starboard) {
-    return {
-      move: plan.move || MOVE.NONE,
-      port: plan.port || { kind: ACTION_KIND.NONE },
-      starboard: plan.starboard || { kind: ACTION_KIND.NONE },
-    };
-  }
-  const action = plan.action || ACTION.NONE;
-  const sidePlan = { kind: ACTION_KIND.NONE };
-  if (action === ACTION.SHOOT_PORT) {
-    sidePlan.kind = ACTION_KIND.FIRE;
-    sidePlan.shots = plan.shots;
-    return { move: plan.move || MOVE.NONE, port: sidePlan, starboard: { kind: ACTION_KIND.NONE } };
-  }
-  if (action === ACTION.SHOOT_STARBOARD) {
-    sidePlan.kind = ACTION_KIND.FIRE;
-    sidePlan.shots = plan.shots;
-    return { move: plan.move || MOVE.NONE, port: { kind: ACTION_KIND.NONE }, starboard: sidePlan };
-  }
-  if (action === ACTION.GRAPPLE_PORT) {
-    sidePlan.kind = ACTION_KIND.GRAPPLE;
-    return { move: plan.move || MOVE.NONE, port: sidePlan, starboard: { kind: ACTION_KIND.NONE } };
-  }
-  if (action === ACTION.GRAPPLE_STARBOARD) {
-    sidePlan.kind = ACTION_KIND.GRAPPLE;
-    return { move: plan.move || MOVE.NONE, port: { kind: ACTION_KIND.NONE }, starboard: sidePlan };
-  }
-  return {
-    move: plan.move || MOVE.NONE,
-    port: { kind: ACTION_KIND.NONE },
-    starboard: { kind: ACTION_KIND.NONE },
-  };
-}
 
 /** @param {Array<{alive:boolean}>} ships */
 function activeShips(ships) {
@@ -76,7 +34,7 @@ export function resolveTurn(matchState, plansByShipId) {
 
     // Movement -> hazards -> combat -> win check.
     const movement = resolveMovementPhase(workingState.ships, phasePlansByShipId, workingState.grid);
-    const hazards = applyHazardsPhase(movement.ships, workingState.grid, phaseIndex);
+    const hazards = applyHazardsPhase(movement.ships, workingState.grid);
     const combat = resolveCombatPhase(hazards.ships, phasePlansByShipId, workingState.grid);
     const win = applyCombatResults(hazards.ships, combat);
 

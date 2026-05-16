@@ -1,57 +1,16 @@
 import {
-  ACTION,
   ACTION_KIND,
   CANNONBALL_DAMAGE,
   DEFAULT_CANNONBALL_SIZE,
   DEFAULT_SHOTS_PER_ATTACK,
+  FALLBACK_CANNON_RANGE,
+  FALLBACK_SHOT_DAMAGE_PER_SHOT,
   GRAPPLE_RANGE,
   ROCK_SIZE,
-  SHOOT_DAMAGE,
-  SHOOT_RANGE,
   SIDE,
 } from "./constants.js";
-
-/** Grid movement vectors by facing. */
-const DIRECTION_VECTORS = {
-  N: { x: 0, y: -1 },
-  E: { x: 1, y: 0 },
-  S: { x: 0, y: 1 },
-  W: { x: -1, y: 0 },
-};
-
-const PORT_DIRECTION = {
-  N: "W",
-  E: "N",
-  S: "E",
-  W: "S",
-};
-
-const STARBOARD_DIRECTION = {
-  N: "E",
-  E: "S",
-  S: "W",
-  W: "N",
-};
-
-/** Resolve port/starboard into an absolute facing. */
-function sideDirection(facing, side) {
-  return side === SIDE.PORT ? PORT_DIRECTION[facing] : STARBOARD_DIRECTION[facing];
-}
-
-function isShootAction(action) {
-  return action === ACTION.SHOOT_PORT || action === ACTION.SHOOT_STARBOARD;
-}
-
-function isGrappleAction(action) {
-  return action === ACTION.GRAPPLE_PORT || action === ACTION.GRAPPLE_STARBOARD;
-}
-
-function sideFromAction(action) {
-  if (action === ACTION.SHOOT_PORT || action === ACTION.GRAPPLE_PORT) {
-    return SIDE.PORT;
-  }
-  return SIDE.STARBOARD;
-}
+import { DIRECTION_VECTORS, sideDirection } from "./geometry.js";
+import { normalizePhasePlan } from "./plan-normalize.js";
 
 /** Trace a straight line of tiles out to range. */
 function traceLine(startShip, direction, range) {
@@ -108,40 +67,21 @@ export function resolveCombatPhase(ships, phasePlansByShipId, grid) {
   // Evaluate each ship's action against the other ship (simultaneous resolution).
   for (const attacker of ships) {
     const defender = ships.find((ship) => ship.id !== attacker.id);
-    const phasePlan = phasePlansByShipId[attacker.id] || {};
+    const phasePlan = normalizePhasePlan(phasePlansByShipId[attacker.id]);
 
     const sidePlans = [
       { side: SIDE.PORT, plan: phasePlan.port },
       { side: SIDE.STARBOARD, plan: phasePlan.starboard },
     ];
 
-    // Backward compatibility for legacy single-action plans.
-    if (!phasePlan.port && !phasePlan.starboard && phasePlan.action) {
-      const action = phasePlan.action || ACTION.NONE;
-      if (action !== ACTION.NONE) {
-        const legacySide = sideFromAction(action);
-        const kind = isShootAction(action) ? ACTION_KIND.FIRE : ACTION_KIND.GRAPPLE;
-        const legacyPlan = { kind };
-        if (kind === ACTION_KIND.FIRE) {
-          legacyPlan.shots = phasePlan.shots;
-        }
-        sidePlans.splice(
-          0,
-          sidePlans.length,
-          { side: legacySide, plan: legacyPlan },
-          { side: legacySide === SIDE.PORT ? SIDE.STARBOARD : SIDE.PORT, plan: { kind: ACTION_KIND.NONE } },
-        );
-      }
-    }
-
     for (const sidePlan of sidePlans) {
       const side = sidePlan.side;
       const plan = sidePlan.plan || { kind: ACTION_KIND.NONE };
       if (plan.kind === ACTION_KIND.FIRE) {
         const firingDirection = sideDirection(attacker.facing, side);
-        const cannonRange = attacker.cannonRange ?? SHOOT_RANGE;
+        const cannonRange = attacker.cannonRange ?? FALLBACK_CANNON_RANGE;
         const cannonballSize = attacker.cannonballSize || DEFAULT_CANNONBALL_SIZE;
-        const damagePerShot = CANNONBALL_DAMAGE[cannonballSize] ?? SHOOT_DAMAGE;
+        const damagePerShot = CANNONBALL_DAMAGE[cannonballSize] ?? FALLBACK_SHOT_DAMAGE_PER_SHOT;
         const maxShots = attacker.shotsPerAttack ?? DEFAULT_SHOTS_PER_ATTACK;
         const requestedShots = Number(plan.shots);
         const shotsUsed = Number.isFinite(requestedShots)

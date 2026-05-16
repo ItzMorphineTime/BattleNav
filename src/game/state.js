@@ -359,5 +359,12 @@ export function createInitialState(options = {}) {
 
 /** @template T @param {T} value @returns {T} */
 export function cloneState(value) {
+  if (typeof structuredClone === "function") {
+    try {
+      return structuredClone(value);
+    } catch {
+      // Non-cloneable values fall through to JSON (current state is plain data).
+    }
+  }
   return JSON.parse(JSON.stringify(value));
 }

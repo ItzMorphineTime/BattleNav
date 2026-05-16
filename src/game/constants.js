@@ -134,9 +134,18 @@ export const CANNONBALL_DAMAGE = {
 };
 export const DEFAULT_CANNONBALL_SIZE = CANNONBALL_SIZE.SMALL;
 export const DEFAULT_SHOTS_PER_ATTACK = 1;
+
+/** When `ship.cannonRange` is missing (should not happen for normal ships). */
+export const FALLBACK_CANNON_RANGE = 3;
+/** When `CANNONBALL_DAMAGE[cannonballSize]` is missing. */
+export const FALLBACK_SHOT_DAMAGE_PER_SHOT = 1;
+
+/** @deprecated Use `SHIP_TYPES[DEFAULT_SHIP_TYPE].hp` or the ship's `maxHp`. */
 export const MAX_HP = SHIP_TYPES[DEFAULT_SHIP_TYPE].hp;
-export const SHOOT_RANGE = 3;
-export const SHOOT_DAMAGE = 1;
+/** @deprecated Use `FALLBACK_CANNON_RANGE` or `ship.cannonRange`. */
+export const SHOOT_RANGE = FALLBACK_CANNON_RANGE;
+/** @deprecated Use `FALLBACK_SHOT_DAMAGE_PER_SHOT` or `CANNONBALL_DAMAGE`. */
+export const SHOOT_DAMAGE = FALLBACK_SHOT_DAMAGE_PER_SHOT;
 export const GRAPPLE_RANGE = 1;
 
 export const FACINGS = ["N", "E", "S", "W"];

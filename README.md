@@ -37,7 +37,7 @@ Plan four micro-actions under a 30 second timer, then watch the turn resolve pha
 - Shots stop at first impact with explosions and water splashes
 
 ### 🌊 Presentation
-- Curved turn arcs and collision bump feedback
+- Bézier-smoothed movement turns, **whirlpool L-paths identical to manoeuvre Bézier + angle tween**, collision bumps
 - Projectile shots with impact VFX
 - Phase log with readable outcomes
 
@@ -58,7 +58,7 @@ Visit **[itzmorphinetime.github.io/BattleNav](https://itzmorphinetime.github.io/
 1. **Clone the repository**
    ```bash
    git clone https://github.com/ItzMorphineTime/BattleNav.git
-   cd BNav
+   cd BattleNav
    ```
 
 2. **Serve locally**
@@ -114,6 +114,8 @@ src/
   main.js
   game/
     constants.js
+    geometry.js
+    plan-normalize.js
     state.js
     simulation.js
     rules-movement.js
@@ -130,6 +132,7 @@ src/
 docs/
   IMPLEMENTATION_PLAN.md
   IMPLEMENTED.md
+  IMPROVEMENTS.md
 ```
 
 ---

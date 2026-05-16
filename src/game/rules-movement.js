@@ -1,15 +1,5 @@
 import { MOVE } from "./constants.js";
-
-/** Grid movement vectors by facing. */
-const DIRECTION_VECTORS = {
-  N: { x: 0, y: -1 },
-  E: { x: 1, y: 0 },
-  S: { x: 0, y: 1 },
-  W: { x: -1, y: 0 },
-};
-
-const TURN_LEFT = { N: "W", W: "S", S: "E", E: "N" };
-const TURN_RIGHT = { N: "E", E: "S", S: "W", W: "N" };
+import { DIRECTION_VECTORS, FACING_TURN_LEFT, FACING_TURN_RIGHT } from "./geometry.js";
 
 /** @param {number} x @param {number} y */
 function isInsideGrid(x, y, grid) {
@@ -89,7 +79,7 @@ function computeProposal(ship, move, grid) {
 
   if (isTurnMove(move)) {
     const turnLeft = move === MOVE.TURN_LEFT;
-    proposal.facingEnd = turnLeft ? TURN_LEFT[ship.facing] : TURN_RIGHT[ship.facing];
+    proposal.facingEnd = turnLeft ? FACING_TURN_LEFT[ship.facing] : FACING_TURN_RIGHT[ship.facing];
 
     const step1 = nextForwardPosition(ship);
     proposal.step1 = step1;
