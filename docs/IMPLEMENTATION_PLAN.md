@@ -40,6 +40,7 @@ Build a playable web PoC of a 1v1 naval tactics game with simultaneous 4-phase p
       rules-win.js
       hazards.js
       ai.js
+      replay.js
     /ui
       hud.js
       planner.js
@@ -233,6 +234,7 @@ Current UI implementation:
 - Click left/right action buttons to cycle each side independently (1 shot -> 2 shots if available -> grapple -> none).
 - Ships with 2 shots show two action buttons per side; cycling to 2 shots highlights both.
 - Lobby screen with player count (1 vs AI / 2 hotseat), ship type selection, and map mode (default/procedural).
+- **Replay:** JSON export/import (`replay.js`): lobby snapshot, procedural numeric `grid.seed` when relevant, each executed turn’s **effective** plans (`P1` + `P2`, AI rows baked in). On import the match starts at **turn 1 positions**; the **Phase Log** card shows **Next turn** / **Play all** / **Jump to end** to drive the same canvas phase playback as a live match (`playPhaseResults`), or skip ahead with `simulateReplayTurns`.
 - Ship headers display cannonball size, shots per attack, and range.
 
 ### 6.6 Map Editor (Planned)
@@ -265,19 +267,19 @@ Current UI implementation:
 - Restart match button.
 
 ## 7) AI Plan (Optional Early)
-Current implementation:
-- Deterministic, greedy per-phase plan generation for P2.
-- Prioritizes grapple if adjacent, otherwise shoot if lined up, otherwise turn/move toward target.
 
-Planned upgrades:
-- Generate candidate 4-phase plans from a reduced action space.
-- Score by:
-  - Expected shot opportunities
-  - Avoiding enemy side lines/grapple range
-  - Maintaining board center control
-- Pick highest score within time budget (<20 ms).
+Current implementation (`ai.js`):
 
-## 8) Milestone Roadmap
+- Builds a fast **greedy** 4-phase baseline (prioritizes grapple → broadside LOS → manoeuvre toward the enemy).
+- Evaluates **~20–25 deterministic candidate** plans per turn via **`resolveTurn`**: greedy plus per-phase variants (each move swapped to `{none|forward|turn_left|turn_right}` plus per-phase combat-off).
+- Chooses highest **simulated outcome** vs the human’s queued plan that turn (weighted on damage exchanged, LOS threat, Manhattan separation, decisive win/near-loss).
+- Greedy still uses **`applyMovePreview`** for positional seeding only; scoring uses full rules (**movement collisions, hazards, combat**).
+
+
+Planned refinements:
+
+- Larger action beam / iterative deepening if needed.
+- Deeper lookahead with explicit opponent modelling (still deterministic).## 8) Milestone Roadmap
 
 ### Milestone 1 - Engine Skeleton (Day 1)
 - Initialize project scaffold and state model.
@@ -345,7 +347,7 @@ Status: AI done, ship types done, hazards done, map modes done.
 - Ship loadouts (HP, cannon range, speed).
 - Obstacles and collision damage.
 - Additional hazards with deterministic patterns.
-- Replay export/import via serialized seed + plans.
+- Replay export/import (JSON) shipped in PoC; optional phase-log rewind UI later.
 - Map editor sharing, validation warnings, and map browser.
 - Networked PvP (lockstep with shared phase inputs).
 - 3D ship models + animated combat effects.

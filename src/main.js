@@ -1,7 +1,15 @@
 import { DEFAULT_SHIP_TYPE, MAP_MODE, SHIP_TYPES, TURN_SECONDS } from "./game/constants.js";
 import { generateAiPlan } from "./game/ai.js";
+import {
+  buildReplayExport,
+  initialStateFromReplayPayload,
+  parseReplayJson,
+  replayLobbySettingsFromPayload,
+  simulateReplayTurns,
+  sortedReplayTurns,
+} from "./game/replay.js";
 import { resolveTurn } from "./game/simulation.js";
-import { createInitialState } from "./game/state.js";
+import { cloneState, createInitialState } from "./game/state.js";
 import { setHudText } from "./ui/hud.js";
 import { playPhaseResults } from "./ui/playback.js";
 import { createPlanner } from "./ui/planner.js";
@@ -27,6 +35,17 @@ const lobbyMap = document.getElementById("lobby-map");
 const lobbySeedField = document.getElementById("lobby-seed-field");
 const lobbyMapSeed = document.getElementById("lobby-map-seed");
 const lobbyNote = document.getElementById("lobby-note");
+const replayImportInput = document.getElementById("replay-import-input");
+const lobbyReplayImportInput = document.getElementById("lobby-replay-import-input");
+const lobbyImportReplayBtn = document.getElementById("lobby-import-replay-btn");
+
+const exportReplayBtn = document.getElementById("export-replay-btn");
+const importReplayBtn = document.getElementById("import-replay-btn");
+const replayPlaybackBar = document.getElementById("replay-playback-bar");
+const replayPlaybackLabel = document.getElementById("replay-playback-label");
+const replayNextBtn = document.getElementById("replay-next-btn");
+const replayPlayAllBtn = document.getElementById("replay-play-all-btn");
+const replayJumpEndBtn = document.getElementById("replay-jump-end-btn");
 
 const hudRefs = {
   turnEl: document.getElementById("hud-turn"),
@@ -40,6 +59,7 @@ let gameState = createInitialState();
 const renderer = new Renderer2D(arenaCanvas, gameState.grid);
 let planner = createPlanner(plannerRoot, gameState.ships);
 let isExecuting = false;
+let replayPlayAllInProgress = false;
 let aiEnabled = true;
 let lobbySettings = {
   playerCount: 1,
@@ -49,6 +69,16 @@ let lobbySettings = {
   /** @type {string} */
   mapSeed: "",
 };
+
+/** @type {{ turns: Array<{ turnNumber: number, plansByShipId: Record<string, unknown> }> }} */
+let replaySession = {
+  turns: [],
+};
+
+/** Queued replay file turns pending animated playback (@see replayPlaybackTurnsRemain). */
+let replayPlayback =
+  /** @type {null | { turns: Array<{ turnNumber: number, plansByShipId: Record<string, unknown> }>, nextIndex: number }} */
+  null;
 
 // Countdown timer drives auto-execution when it hits zero.
 const timer = new TurnTimer(
@@ -71,6 +101,102 @@ function addLogEntry(message) {
 /** Clear the phase log. */
 function clearEventLog() {
   eventLog.innerHTML = "";
+}
+
+/** @param {{ phase: number }} phaseResult */
+function appendPhaseResultToLog(phaseResult) {
+  addLogEntry(`Phase ${phaseResult.phase}:`);
+  for (const message of phaseResult.movementEvents || []) {
+    addLogEntry(` - ${message}`);
+  }
+  for (const message of phaseResult.hazardEvents || []) {
+    addLogEntry(` - ${message}`);
+  }
+  for (const message of phaseResult.combatEvents || []) {
+    addLogEntry(` - ${message}`);
+  }
+  for (const message of phaseResult.resultEvents || []) {
+    addLogEntry(` - ${message}`);
+  }
+  if (phaseResult.outcome.reason) {
+    addLogEntry(` - ${phaseResult.outcome.reason}`);
+  }
+}
+
+const PLAYBACK_TIMING = {
+  moveDurationMs: 520,
+  hazardDurationMs: 220,
+  combatDurationMs: 420,
+  pauseMs: 160,
+};
+
+/**
+ * Animate phases for one turn (movement + hazards + combat).
+ * @param {Array<Object>} phaseResults
+ * @param {import("./game/state.js").MatchState} baseState state before resolution
+ */
+async function runPhaseResultsAnimation(phaseResults, baseState) {
+  await playPhaseResults(phaseResults, {
+    renderer,
+    baseState,
+    ...PLAYBACK_TIMING,
+    onPhase: async (phaseResult) => {
+      setHudText(hudRefs, {
+        phase: phaseResult.phase,
+        state: "executing",
+      });
+      appendPhaseResultToLog(phaseResult);
+    },
+  });
+}
+
+function replayPlaybackPending() {
+  return Boolean(
+    replayPlayback &&
+      replayPlayback.turns.length > 0 &&
+      replayPlayback.nextIndex < replayPlayback.turns.length,
+  );
+}
+
+function syncReplayPlaybackBar() {
+  if (!replayPlaybackBar || !replayPlaybackLabel) {
+    return;
+  }
+  if (!replayPlaybackPending()) {
+    replayPlaybackBar.classList.add("hidden");
+    if (replayNextBtn) {
+      replayNextBtn.disabled = false;
+      replayPlayAllBtn.disabled = false;
+      replayJumpEndBtn.disabled = false;
+    }
+    return;
+  }
+
+  replayPlaybackBar.classList.remove("hidden");
+  const { turns, nextIndex } = replayPlayback;
+  const entry = turns[nextIndex];
+  replayPlaybackLabel.textContent = `Replay playback — step ${nextIndex + 1} of ${turns.length} (match turn ${entry.turnNumber}).`;
+
+  const busy = isExecuting || replayPlayAllInProgress;
+  replayNextBtn.disabled = busy;
+  replayPlayAllBtn.disabled = busy;
+  replayJumpEndBtn.disabled = busy;
+}
+
+/** Timer off, planner locked; use while a file replay still has turns to show. */
+function enterReplayPlaybackMode() {
+  timer.stop();
+  planner.setDisabled(true);
+  executeEarlyBtn.disabled = true;
+  clearPlansBtn.disabled = true;
+  lobbyBtn.disabled = false;
+  setHudText(hudRefs, {
+    turn: gameState.turnNumber,
+    phase: "-",
+    state: "replay",
+    timer: "-",
+  });
+  syncReplayPlaybackBar();
 }
 
 /** Show the end-of-match banner. */
@@ -105,6 +231,9 @@ function setPlanningMode() {
 /** Handle end-of-match UI + timer cleanup. */
 function endMatch() {
   timer.stop();
+  isExecuting = false;
+  replayPlayAllInProgress = false;
+  replayPlayback = null;
   planner.setDisabled(true);
   executeEarlyBtn.disabled = true;
   clearPlansBtn.disabled = true;
@@ -117,11 +246,15 @@ function endMatch() {
     const winner = gameState.ships.find((ship) => ship.id === gameState.winnerId);
     showResult(`${winner ? winner.name : "Unknown"} wins!`);
   }
+  syncReplayPlaybackBar();
 }
 
 /** Execute one full 4-phase turn and play back results. */
 async function executeTurn() {
   if (isExecuting || gameState.status === "finished") {
+    return;
+  }
+  if (replayPlaybackPending()) {
     return;
   }
 
@@ -133,49 +266,28 @@ async function executeTurn() {
   lobbyBtn.disabled = true;
   setHudText(hudRefs, { state: "executing", timer: 0 });
 
-  const plansByShipId = planner.getPlans();
-  if (aiEnabled) {
-    const aiPlan = generateAiPlan(gameState, "P2");
-    plansByShipId.P2 = aiPlan;
+  try {
+    const plannerPlans = planner.getPlans();
+    const effectivePlans = cloneState(plannerPlans);
+    if (aiEnabled) {
+      effectivePlans.P2 = generateAiPlan(gameState, "P2", effectivePlans);
+    }
+    replaySession.turns.push({
+      turnNumber: gameState.turnNumber,
+      plansByShipId: cloneState(effectivePlans),
+    });
+
+    const { finalState, phaseResults } = resolveTurn(gameState, effectivePlans);
+    clearEventLog();
+
+    await runPhaseResultsAnimation(phaseResults, gameState);
+
+    gameState = finalState;
+    renderer.draw(gameState);
+    setHudText(hudRefs, { turn: gameState.turnNumber });
+  } finally {
+    isExecuting = false;
   }
-  const { finalState, phaseResults } = resolveTurn(gameState, plansByShipId);
-  clearEventLog();
-
-  await playPhaseResults(phaseResults, {
-    renderer,
-    baseState: gameState,
-    moveDurationMs: 520,
-    hazardDurationMs: 220,
-    combatDurationMs: 420,
-    pauseMs: 160,
-    onPhase: async (phaseResult) => {
-      setHudText(hudRefs, {
-        phase: phaseResult.phase,
-        state: "executing",
-      });
-
-      addLogEntry(`Phase ${phaseResult.phase}:`);
-      for (const message of phaseResult.movementEvents) {
-        addLogEntry(` - ${message}`);
-      }
-      for (const message of phaseResult.hazardEvents) {
-        addLogEntry(` - ${message}`);
-      }
-      for (const message of phaseResult.combatEvents) {
-        addLogEntry(` - ${message}`);
-      }
-      for (const message of phaseResult.resultEvents) {
-        addLogEntry(` - ${message}`);
-      }
-      if (phaseResult.outcome.reason) {
-        addLogEntry(` - ${phaseResult.outcome.reason}`);
-      }
-    },
-  });
-
-  gameState = finalState;
-  renderer.draw(gameState);
-  setHudText(hudRefs, { turn: gameState.turnNumber });
 
   if (gameState.status === "finished") {
     endMatch();
@@ -185,9 +297,202 @@ async function executeTurn() {
   }
 }
 
+function syncLobbyUiFromSettings() {
+  lobbyPlayers.value = String(lobbySettings.playerCount);
+  lobbyP1Type.value = lobbySettings.p1TypeId;
+  lobbyP2Type.value = lobbySettings.p2TypeId;
+  lobbyMap.value = lobbySettings.mapMode;
+  if (lobbyMapSeed) {
+    lobbyMapSeed.value = lobbySettings.mapSeed;
+  }
+  updateLobbyNote();
+  updateLobbySeedFieldVisibility();
+}
+
+/**
+ * Restore match + recording from replay JSON (`parseReplayJson` output).
+ * @param {ReturnType<typeof parseReplayJson>} payload
+ */
+function applyReplayPayload(payload) {
+  lobbySettings = replayLobbySettingsFromPayload(payload);
+  gameState = initialStateFromReplayPayload(payload);
+  aiEnabled = lobbySettings.playerCount === 1;
+
+  replaySession.turns = payload.turns.map((t) => ({
+    turnNumber: t.turnNumber,
+    plansByShipId: cloneState(t.plansByShipId),
+  }));
+
+  const ordered = sortedReplayTurns(payload.turns);
+  replayPlayback =
+    ordered.length === 0
+      ? null
+      : {
+          turns: ordered.map((t) => ({
+            turnNumber: t.turnNumber,
+            plansByShipId: cloneState(t.plansByShipId),
+          })),
+          nextIndex: 0,
+        };
+
+  hideResult();
+  planner = createPlanner(plannerRoot, gameState.ships);
+  renderer.draw(gameState);
+  clearEventLog();
+  if (ordered.length === 0) {
+    addLogEntry("Replay loaded: no recorded turns — starting a fresh match from this file’s lobby.");
+  } else {
+    addLogEntry(
+      `Replay loaded: ${ordered.length} recorded turn${ordered.length === 1 ? "" : "s"}. Starting position — use Next turn or Play all below.`,
+    );
+  }
+
+  syncLobbyUiFromSettings();
+
+  if (ordered.length === 0) {
+    setPlanningMode();
+  } else {
+    enterReplayPlaybackMode();
+  }
+  hideLobby();
+  syncReplayPlaybackBar();
+}
+
+async function playOneReplayTurnAnimated() {
+  if (!replayPlaybackPending() || isExecuting) {
+    return;
+  }
+
+  const { turns, nextIndex } = replayPlayback;
+  const entry = turns[nextIndex];
+
+  isExecuting = true;
+  timer.stop();
+  planner.setDisabled(true);
+  executeEarlyBtn.disabled = true;
+  clearPlansBtn.disabled = true;
+  lobbyBtn.disabled = false;
+  syncReplayPlaybackBar();
+
+  try {
+    const { finalState, phaseResults } = resolveTurn(gameState, entry.plansByShipId);
+    addLogEntry(
+      `━━ Replay — step ${nextIndex + 1}/${turns.length} (match turn ${entry.turnNumber}) ━━`,
+    );
+    setHudText(hudRefs, { state: "executing", timer: 0 });
+
+    await runPhaseResultsAnimation(phaseResults, gameState);
+
+    gameState = finalState;
+    replayPlayback.nextIndex += 1;
+    renderer.draw(gameState);
+    setHudText(hudRefs, { turn: gameState.turnNumber });
+  } finally {
+    isExecuting = false;
+  }
+
+  if (gameState.status === "finished") {
+    replayPlayback = null;
+    syncReplayPlaybackBar();
+    endMatch();
+    return;
+  }
+
+  if (replayPlayback && replayPlayback.nextIndex >= replayPlayback.turns.length) {
+    replayPlayback = null;
+    syncReplayPlaybackBar();
+    planner.clearPlans();
+    addLogEntry("Replay finished — you can continue the match from here.");
+    setPlanningMode();
+    return;
+  }
+
+  enterReplayPlaybackMode();
+}
+
+async function playReplayAllTurns() {
+  if (replayPlayAllInProgress || !replayPlaybackPending()) {
+    return;
+  }
+  replayPlayAllInProgress = true;
+  try {
+    while (replayPlaybackPending() && gameState.status !== "finished") {
+      await playOneReplayTurnAnimated();
+    }
+  } finally {
+    replayPlayAllInProgress = false;
+    syncReplayPlaybackBar();
+  }
+}
+
+function jumpReplayToEnd() {
+  if (!replayPlaybackPending()) {
+    return;
+  }
+  const remaining = replayPlayback.turns.slice(replayPlayback.nextIndex);
+  timer.stop();
+  gameState = simulateReplayTurns(gameState, remaining);
+  replayPlayback = null;
+  syncReplayPlaybackBar();
+  renderer.draw(gameState);
+  addLogEntry("Replay jumped to the final recorded state (no animation).");
+
+  if (gameState.status === "finished") {
+    endMatch();
+  } else {
+    planner.clearPlans();
+    setPlanningMode();
+  }
+}
+
+async function handleReplayFileInput(event) {
+  const input = /** @type {HTMLInputElement} */ (event.target);
+  const file = input.files?.[0];
+  input.value = "";
+  if (!file) {
+    return;
+  }
+  try {
+    const payload = parseReplayJson(await file.text());
+    applyReplayPayload(payload);
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    alert(msg);
+  }
+}
+
+function triggerReplayExport() {
+  try {
+    const payload = buildReplayExport({
+      lobbySettings,
+      turns: replaySession.turns,
+      grid: gameState.grid,
+    });
+    const blob = new Blob([JSON.stringify(payload, null, 2)], {
+      type: "application/json",
+    });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    const suffix = replaySession.turns.length
+      ? `after-turn-${replaySession.turns[replaySession.turns.length - 1].turnNumber}`
+      : "start";
+    anchor.download = `battlenav-replay-${suffix}.json`;
+    anchor.click();
+    URL.revokeObjectURL(url);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    alert(`Could not export replay: ${message}`);
+  }
+}
+
 /** Reset match state from lobby settings. */
 function restartMatch() {
   timer.stop();
+  replayPlayAllInProgress = false;
+  replaySession.turns = [];
+  replayPlayback = null;
+  syncReplayPlaybackBar();
   const proceduralSeed =
     lobbySettings.mapMode === MAP_MODE.PROCEDURAL && lobbySettings.mapSeed
       ? lobbySettings.mapSeed
@@ -269,6 +574,35 @@ lobbyPlayers.addEventListener("change", () => {
 
 lobbyMap.addEventListener("change", () => {
   updateLobbySeedFieldVisibility();
+});
+
+lobbyImportReplayBtn?.addEventListener("click", () => {
+  lobbyReplayImportInput?.click();
+});
+lobbyReplayImportInput?.addEventListener("change", (event) => {
+  void handleReplayFileInput(event);
+});
+
+importReplayBtn?.addEventListener("click", () => {
+  replayImportInput?.click();
+});
+replayImportInput?.addEventListener("change", (event) => {
+  void handleReplayFileInput(event);
+});
+exportReplayBtn?.addEventListener("click", () => {
+  triggerReplayExport();
+});
+
+replayNextBtn?.addEventListener("click", () => {
+  void playOneReplayTurnAnimated();
+});
+
+replayPlayAllBtn?.addEventListener("click", () => {
+  void playReplayAllTurns();
+});
+
+replayJumpEndBtn?.addEventListener("click", () => {
+  jumpReplayToEnd();
 });
 
 lobbyForm.addEventListener("submit", (event) => {

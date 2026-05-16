@@ -14,7 +14,7 @@ Last updated: 2026-05-16
 - Win/draw detection and restart flow.
 - Ship type defaults defined in data (Sloop, Cutter, War Brig, Dhow, War Frigate, Baghlah).
 - Default matchup: P1 Cutter vs P2 War Brig.
-- AI opponent mode enabled via lobby (1 player).
+- AI opponent mode enabled via lobby (1 player): **candidate plan scoring** over `resolveTurn` using the captain’s queued P1 plan (move mutations + selective combat-off around a greedy seed).
 - Hazards: wind currents, 2x2 whirlpools with CW/CCW spin (opposite-corner move + 90-degree rotate),
   and rocks (large blocks shots, small does not).
 
@@ -44,6 +44,7 @@ Last updated: 2026-05-16
   collision bumps, hazard displacement, projectile shots, obstacle explosions, and miss splashes.
 - Lobby screen for player count + ship type selection (1 player vs AI / 2 player hotseat).
 - Lobby map selection (default or procedural) with optional **procedural seed** for repeatable layouts.
+- **Replay:** export/import JSON — starting **match snapshot** plus **interactive playback** (**Next turn** / **Play all** / **Jump to end**) using the same phase animator as live play; `Jump to end` uses `simulateReplayTurns`; continued play after the recording is supported once steps finish.
 - Back to Lobby control in match UI.
 - Ship headers show shots per attack, cannonball size, and range.
 
@@ -57,13 +58,13 @@ Last updated: 2026-05-16
   in **`hazards.js`** (`classifyWhirlpoolForPlayback`, **`getWhirlpoolKneeTile`**
   matching the manoeuvre **forward-leg** Bézier knee when valid, spin fallback otherwise).
 - `cloneState()` uses `structuredClone` when available with JSON fallback.
+- **`replay.js`** (`initialStateFromReplayPayload`, `buildReplayExport`, `parseReplayJson`, `matchStateFromReplayPayload`, `replayLobbySettingsFromPayload`, `simulateReplayTurns`, `sortedReplayTurns`).
 - Backlog tracked in **`docs/IMPROVEMENTS.md`**.
 
 ---
 
 # Planned Next
-- Replay log export/import.
-- AI heuristic upgrade (candidate plan scoring).
+- Optional rewind / scrub timeline for imported replays beyond step-forward playback.
 - Further module cleanup (shared types, dedicated input layer, tests).
 - 3D ships + animated combat effects (Three.js layer).
 - Multiplayer lobbies (create/join/host) + turn sync.

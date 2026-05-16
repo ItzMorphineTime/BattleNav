@@ -41,6 +41,10 @@ Plan four micro-actions under a 30 second timer, then watch the turn resolve pha
 - Projectile shots with impact VFX
 - Phase log with readable outcomes
 
+### 📼 Replay & AI
+- **Replay files** (JSON): export lobby + procedural seed + every executed turn’s plans; import opens the **starting** position, then **Next turn** / **Play all** animates the recorded match (or **Jump to end** for instant sync).
+- **AI** picks among scored full-turn candidates using the same simulation as the match, reacting to your queued plan that turn.
+
 ### 🧭 Modes & Maps
 - Local hotseat or AI opponent
 - Curated default arena or procedural map generation

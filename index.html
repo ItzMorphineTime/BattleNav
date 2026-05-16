@@ -56,6 +56,18 @@
             P2 will be controlled by AI in 1 Player mode.
           </div>
 
+          <input
+            type="file"
+            id="lobby-replay-import-input"
+            class="hidden"
+            accept="application/json,.json"
+            aria-hidden="true"
+          />
+
+          <button type="button" id="lobby-import-replay-btn" class="btn">
+            Import replay…
+          </button>
+
           <button id="lobby-start-btn" class="btn btn-primary lobby-start" type="submit">
             Start Match
           </button>
@@ -85,6 +97,15 @@
           <div class="planner-controls">
             <button id="execute-early-btn" class="btn btn-primary">Execute Early</button>
             <button id="clear-plans-btn" class="btn">Clear Plans</button>
+            <button type="button" id="export-replay-btn" class="btn">Export replay…</button>
+            <button type="button" id="import-replay-btn" class="btn">Import replay…</button>
+            <input
+              type="file"
+              id="replay-import-input"
+              class="hidden"
+              accept="application/json,.json"
+              aria-hidden="true"
+            />
             <button id="restart-btn" class="btn">Restart Match</button>
             <button id="lobby-btn" class="btn">Back to Lobby</button>
           </div>
@@ -92,6 +113,14 @@
       </main>
 
       <section class="log-card">
+        <div id="replay-playback-bar" class="replay-playback-bar hidden" aria-label="Replay playback">
+          <p id="replay-playback-label" class="replay-playback-label"></p>
+          <div class="replay-playback-actions">
+            <button type="button" id="replay-next-btn" class="btn btn-primary">Next turn</button>
+            <button type="button" id="replay-play-all-btn" class="btn">Play all</button>
+            <button type="button" id="replay-jump-end-btn" class="btn">Jump to end</button>
+          </div>
+        </div>
         <h2>Phase Log</h2>
         <ul id="event-log" class="event-log" aria-live="polite" aria-relevant="additions"></ul>
       </section>

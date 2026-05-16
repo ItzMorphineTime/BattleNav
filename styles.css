@@ -421,6 +421,27 @@ select:disabled {
   opacity: 0.6;
 }
 
+.replay-playback-bar {
+  margin-bottom: 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(52, 190, 195, 0.45);
+  background: rgba(12, 40, 58, 0.65);
+}
+
+.replay-playback-label {
+  margin: 0 0 10px;
+  font-size: 0.92rem;
+  color: var(--text-soft);
+  line-height: 1.35;
+}
+
+.replay-playback-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 .log-card h2 {
   margin: 0 0 10px;
   font-size: 1rem;

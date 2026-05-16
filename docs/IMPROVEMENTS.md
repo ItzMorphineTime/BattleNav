@@ -55,13 +55,13 @@ Supporting **`classifyWhirlpoolForPlayback`** + **`applyWhirlpoolFacingChange`**
 
 ### AI
 
-- [ ] **`applyMovePreview`** still approximates turns (no full L-shape, rocks, or swap rules); align with **`rules-movement.js`** or a shared lightweight resolver.
-- [ ] Multi-phase / scored candidate plans per plan §7 (enemy beyond static lookahead).
+- [x] **Scored multi-candidate AI** — `generateAiPlan` evaluates a greedy seed plus move/combat mutations with **`resolveTurn`** against the human’s current P1 plan (`ai.js`).
+- [ ] **`applyMovePreview`** still used only to **seed** the greedy baseline; optional follow-up: drop preview entirely and seed from rule queries if desired.
 
 ### UX & accessibility
 
+- [x] Replay **export/import** — JSON bundle (`replay.js`): lobby snapshot, procedural `grid.seed`, per-turn effective `plansByShipId`; **interactive playback** after import (`Next turn`, `Play all`, `Jump to end`) matching live **Execute Early** animations (`playPhaseResults`); **`Jump to end`** = `simulateReplayTurns`. Buttons in match UI + lobby import.
 - [ ] Keyboard planner controls, visible focus rings, tighter focus management in the planner.
-- [ ] Replay export/import (`MatchState.seed` + serialized plans).
 
 ### Presentation (optional tuning)
 
